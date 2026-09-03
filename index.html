@@ -9,13 +9,16 @@
 <body class="mode-portrait">
 
   <!-- =========================================================================
-       模式一：直屏模式 (Portrait Mode) - 病歷號管理、單手極速輸入與歷程清單
+       模式一：直屏模式 (Portrait Mode) - 嚴格病患隔離、單手輸入與歷程清單
        ========================================================================= -->
   <div id="container-portrait" class="view-container portrait-view">
     <!-- 頂部導航列 -->
     <header class="ios-nav-bar">
       <div class="nav-content">
-        <h1 class="nav-title">CPR 縱向追蹤</h1>
+        <div>
+          <h1 class="nav-title">CPR 縱向追蹤</h1>
+          <span class="nav-patient-indicator" id="nav-patient-indicator">新病患（獨立檢測）</span>
+        </div>
         <button type="button" id="btn-toggle-to-chart" class="nav-chart-btn" title="查看全螢幕多點趨勢圖表">
           📊 全幅趨勢圖
         </button>
@@ -23,24 +26,31 @@
     </header>
 
     <main class="portrait-body">
-      <!-- 1. 病歷號與自動時間列 (Patient Identifier Card) -->
+      <!-- 1. 病歷號管理與切換卡片 (嚴格獨立病歷檔案) -->
       <section class="ios-card patient-card">
         <div class="patient-row">
-          <label class="patient-label" for="input-patient-mrn">病歷號 (MRN)</label>
+          <label class="patient-label" for="input-patient-mrn">病歷號</label>
           <div class="patient-input-wrap">
-            <input type="text" id="input-patient-mrn" value="P109823" placeholder="例如 A12345678" class="mrn-input" autocomplete="off" />
-            <select id="select-recent-patients" class="recent-select" title="選擇近期病患">
-              <option value="">📋 近期病患...</option>
-            </select>
+            <input type="text" id="input-patient-mrn" value="" placeholder="請輸入病歷號 (例如 A1234)" class="mrn-input" autocomplete="off" />
+            <button type="button" id="btn-new-patient" class="btn-new-patient-action" title="建立新病患 / 清空欄位">
+              ➕ 新病人
+            </button>
           </div>
         </div>
+
+        <div class="patient-switch-row">
+          <select id="select-recent-patients" class="recent-select-full" title="載入既有病患歷史檔案">
+            <option value="">📂 載入既有病歷檔案...</option>
+          </select>
+        </div>
+
         <div class="patient-time-row">
           <span class="time-label">量測時間（自動鍵入）：</span>
-          <span id="display-auto-time" class="time-value">2026-09-03 08:42</span>
+          <span id="display-auto-time" class="time-value">2026-09-03 08:46</span>
         </div>
       </section>
 
-      <!-- 2. 當次 CPR 核心結果大卡片 (含前後趨勢比對) -->
+      <!-- 2. 當次 CPR 核心結果大卡片 (嚴格限「同病患」比對) -->
       <section class="ios-card result-hero-card">
         <div class="hero-cpr-header">
           <span class="hero-label">本次 CPR 數值</span>
@@ -48,17 +58,17 @@
         </div>
 
         <div class="hero-numbers-row">
-          <div class="hero-cpr-val" id="display-cpr-num">2.11</div>
-          <div class="hero-centile-val" id="display-cpr-centile">78.8%</div>
+          <div class="hero-cpr-val" id="display-cpr-num">2.03</div>
+          <div class="hero-centile-val" id="display-cpr-centile">80.5%</div>
         </div>
 
         <div class="hero-footer-row">
           <span id="display-cpr-status-badge" class="ios-badge badge-normal">
             ✓ 正常 (≥ 第 5 百分位)
           </span>
-          <!-- 歷次趨勢警示徽章 -->
+          <!-- 嚴格同病患歷史比對徽章 -->
           <span id="display-trend-badge" class="trend-badge badge-stable">
-            首次紀錄
+            新病患（無前次紀錄）
           </span>
         </div>
       </section>
@@ -86,11 +96,11 @@
         <!-- UmA PI -->
         <div class="ios-list-row last-row">
           <label class="row-label" for="input-uma-pi">UmA PI</label>
-          <input type="number" id="input-uma-pi" value="0.85" step="0.01" min="0.1" max="4.0" inputmode="decimal" class="row-single-input" placeholder="例如 0.85" />
+          <input type="number" id="input-uma-pi" value="0.88" step="0.01" min="0.1" max="4.0" inputmode="decimal" class="row-single-input" placeholder="例如 0.88" />
         </div>
       </section>
 
-      <!-- 4. 儲存與查看按鈕組 -->
+      <!-- 4. 儲存按鈕組 -->
       <div class="action-btn-group">
         <button type="button" id="btn-save-measurement" class="btn-save-record">
           💾 儲存本次量測至病歷
@@ -100,11 +110,11 @@
       <!-- 5. 該病患歷史追蹤歷程 (Timeline History) -->
       <section class="ios-card history-card" id="card-history">
         <div class="history-header">
-          <span class="history-title">📅 追蹤歷程 (<span id="count-history-records">0</span> 次測量)</span>
-          <span class="history-sub">點擊全幅圖表查看趨勢線</span>
+          <span class="history-title" id="history-header-title">📅 追蹤歷程 (0 次測量)</span>
+          <span class="history-sub">限同一病患縱向比對</span>
         </div>
         <div id="history-list-mount" class="history-list">
-          <div class="history-empty">尚無歷史追蹤紀錄，點擊上方按鈕儲存第 1 次測量。</div>
+          <div class="history-empty">目前為新病患，無歷史前次紀錄。</div>
         </div>
       </section>
     </main>
@@ -119,11 +129,11 @@
     <header class="landscape-header">
       <div class="ls-patient-badge">
         <span class="ls-dot-indicator" id="ls-status-dot"></span>
-        <span id="ls-patient-summary">病歷號: P109823 · 共 1 次測量</span>
+        <span id="ls-patient-summary">新病患 · 單次實測落點</span>
       </div>
 
       <div class="ls-trend-summary" id="ls-trend-text">
-        趨勢平穩
+        單次測量模式
       </div>
 
       <button type="button" id="btn-back-to-input" class="ls-back-btn">
@@ -138,7 +148,6 @@
 
   <!-- =========================================================================
        iOS 鍵盤專屬工具列 (Keyboard Accessory Toolbar)
-       當點擊任何輸入框時自動浮現，附帶「下一格」與「完成/收起鍵盤」
        ========================================================================= -->
   <div id="ios-kb-toolbar" class="ios-kb-toolbar hidden">
     <div class="kb-toolbar-left">
@@ -151,7 +160,7 @@
   </div>
 
 
-  <!-- 內建純原生資料持久化與縱向趨勢圖表腳本 (100% 離線本地儲存) -->
+  <!-- 內建純原生資料庫與演算法腳本 (嚴格病患獨立隔離) -->
   <script>
     (function () {
       var STORAGE_KEY = 'fetal_doppler_patients_v1';
@@ -166,7 +175,7 @@
           }
         },
         getRecords: function (mrn) {
-          if (!mrn) return [];
+          if (!mrn || !mrn.trim()) return [];
           var all = this.getAll();
           var key = mrn.trim().toUpperCase();
           var p = all[key];
@@ -247,13 +256,13 @@
         days: 4,
         gaDecimal: 28.57,
         mcaPI: 1.79,
-        umaPI: 0.85,
-        cpr: 2.11,
-        centile: 78.8,
+        umaPI: 0.88,
+        cpr: 2.03,
+        centile: 80.5,
         isAbnormal: false
       };
 
-      var activeMRN = 'P109823';
+      var activeMRN = ''; // 預設為空，不預設綁定任何特定病患！
 
       function updateAutoTime() {
         var now = new Date();
@@ -268,11 +277,13 @@
       }
 
       function recalculate() {
+        var mrnInput = document.getElementById('input-patient-mrn');
+        activeMRN = mrnInput ? mrnInput.value.trim().toUpperCase() : '';
+
         var w = parseInt(document.getElementById('input-ga-weeks').value, 10);
         var d = parseInt(document.getElementById('input-ga-days').value, 10);
         var mca = parseFloat(document.getElementById('input-mca-pi').value);
         var uma = parseFloat(document.getElementById('input-uma-pi').value);
-        activeMRN = (document.getElementById('input-patient-mrn').value || 'DEFAULT').trim().toUpperCase();
 
         if (isNaN(w) || w < 20 || w > 42) w = 28;
         if (isNaN(d) || d < 0 || d > 6) d = 0;
@@ -310,42 +321,62 @@
           badge.textContent = '✓ 正常 (≥ 第 5 百分位)';
         }
 
-        updateTrendBadgeAndTimeline();
+        // 更新病患狀態與歷史追蹤
+        updatePatientStateAndTrend();
       }
 
-      function updateTrendBadgeAndTimeline() {
-        var records = DB.getRecords(activeMRN);
-        var countEl = document.getElementById('count-history-records');
-        if (countEl) countEl.textContent = records.length;
-
+      // =========================================================================
+      // 核心：嚴格同病患隔離比較 (Strict Patient Isolation)
+      // =========================================================================
+      function updatePatientStateAndTrend() {
+        var navIndicator = document.getElementById('nav-patient-indicator');
         var trendBadge = document.getElementById('display-trend-badge');
         var listMount = document.getElementById('history-list-mount');
+        var historyTitle = document.getElementById('history-header-title');
+
+        if (!activeMRN) {
+          // 尚未輸入病歷號：獨立全新檢測，嚴禁跨病患比對！
+          navIndicator.textContent = '未指定病歷號（獨立檢測）';
+          navIndicator.className = 'nav-patient-indicator text-muted';
+          trendBadge.className = 'trend-badge badge-stable';
+          trendBadge.textContent = '新病患紀錄';
+          historyTitle.textContent = '📅 追蹤歷程 (未建檔)';
+          listMount.innerHTML = '<div class="history-empty">請輸入病歷號建立專屬檔案，或點「儲存」自動歸檔。</div>';
+          return;
+        }
+
+        navIndicator.textContent = '現正檢視病歷號：[' + activeMRN + ']';
+        navIndicator.className = 'nav-patient-indicator text-active';
+
+        // 取得「僅屬於此病歷號」的歷史紀錄
+        var records = DB.getRecords(activeMRN);
+        historyTitle.textContent = '📅 [' + activeMRN + '] 追蹤歷程 (' + records.length + ' 次測量)';
 
         if (records.length === 0) {
+          // 此病歷號為全新檔案，無歷史數據
           trendBadge.className = 'trend-badge badge-stable';
-          trendBadge.textContent = '首次紀錄';
+          trendBadge.textContent = '新病患（無前次紀錄）';
+          listMount.innerHTML = '<div class="history-empty">病歷號 [' + activeMRN + '] 尚無歷史紀錄。點擊下方儲存為第 1 次測量。</div>';
         } else {
+          // 此病歷號有前次紀錄：僅與「本病患自己的前次紀錄」比對！
           var lastRec = records[records.length - 1];
           var deltaP = currentCalc.centile - lastRec.centile;
 
           if (deltaP <= -25.0) {
             trendBadge.className = 'trend-badge badge-danger';
-            trendBadge.textContent = '⚠️ 百分位急降 (' + deltaP.toFixed(0) + '%)';
+            trendBadge.textContent = '⚠️ 同病患前次(' + lastRec.weeks + 'w)比對：急降 ' + deltaP.toFixed(0) + '%';
           } else if (deltaP < -10.0) {
             trendBadge.className = 'trend-badge badge-warning';
-            trendBadge.textContent = '📉 下降 (' + deltaP.toFixed(0) + '%)';
+            trendBadge.textContent = '📉 同病患前次(' + lastRec.weeks + 'w)比對：下降 ' + deltaP.toFixed(0) + '%';
           } else if (deltaP > 10.0) {
             trendBadge.className = 'trend-badge badge-up';
-            trendBadge.textContent = '📈 上升 (+' + deltaP.toFixed(0) + '%)';
+            trendBadge.textContent = '📈 同病患前次(' + lastRec.weeks + 'w)比對：上升 +' + deltaP.toFixed(0) + '%';
           } else {
             trendBadge.className = 'trend-badge badge-stable';
-            trendBadge.textContent = '平穩維持';
+            trendBadge.textContent = '同病患維持平穩 (' + (deltaP >= 0 ? '+' : '') + deltaP.toFixed(0) + '%)';
           }
-        }
 
-        if (records.length === 0) {
-          listMount.innerHTML = '<div class="history-empty">尚無歷史追蹤紀錄，點擊上方按鈕儲存第 1 次測量。</div>';
-        } else {
+          // 渲染該病患的專屬歷史清單
           var html = '';
           var rev = records.slice().reverse();
           for (var i = 0; i < rev.length; i++) {
@@ -372,7 +403,7 @@
             btn.addEventListener('click', function (e) {
               e.stopPropagation();
               var rid = btn.dataset.id;
-              if (confirm('確定要刪除此筆測量紀錄嗎？')) {
+              if (confirm('確定要刪除病歷 [' + activeMRN + '] 的此筆紀錄嗎？')) {
                 DB.delete(activeMRN, rid);
                 recalculate();
                 renderLandscapeChart();
@@ -389,15 +420,25 @@
         if (!sel) return;
         var patients = DB.listPatients();
         var current = sel.value;
-        var opts = '<option value="">📋 近期病患歷史 (' + patients.length + ')...</option>';
+        var opts = '<option value="">📂 載入既有病歷檔案 (' + patients.length + ' 位)...</option>';
         patients.forEach(function (p) {
-          opts += '<option value="' + p.mrn + '">' + p.mrn + ' (' + p.count + ' 次量測)</option>';
+          opts += '<option value="' + p.mrn + '">病歷: ' + p.mrn + ' (' + p.count + ' 次量測)</option>';
         });
         sel.innerHTML = opts;
         if (current) sel.value = current;
       }
 
-      // 橫屏趨勢折線圖
+      function startNewPatient() {
+        document.getElementById('input-patient-mrn').value = '';
+        document.getElementById('select-recent-patients').value = '';
+        activeMRN = '';
+        recalculate();
+        document.getElementById('input-patient-mrn').focus();
+      }
+
+      // =========================================================================
+      // 橫屏全螢幕趨勢折線圖 (Strict Single-Patient Trajectory)
+      // =========================================================================
       function renderLandscapeChart(scrubGA) {
         var container = document.getElementById('landscape-chart-mount');
         if (!container) return;
@@ -415,7 +456,8 @@
         var minY = 0.4;
         var maxY = 3.0;
 
-        var savedRecords = DB.getRecords(activeMRN);
+        // 僅取得「當前這一位病患」的歷史紀錄，絕不混入其他病患！
+        var savedRecords = activeMRN ? DB.getRecords(activeMRN) : [];
         var allPoints = savedRecords.slice();
 
         var hasCurrent = savedRecords.some(function (r) {
@@ -470,18 +512,19 @@
                    '<text x="' + (padding.left - 8) + '" y="' + (gy + 4) + '" font-size="11" fill="#64748b" text-anchor="end">' + yVal.toFixed(1) + '</text>';
         }
 
+        // 僅在「同一位病患」有 2 次以上紀錄時，才繪製趨勢折線！
         var trajectoryPath = '';
         var trajectoryGlow = '';
         var trajectoryMarkers = '';
 
         if (allPoints.length > 0) {
-          var pathCommands = allPoints.map(function (pt, idx) {
-            var px = sx(pt.gaDecimal).toFixed(1);
-            var py = sy(pt.cpr).toFixed(1);
-            return (idx === 0 ? 'M' : 'L') + ' ' + px + ' ' + py;
-          }).join(' ');
+          if (allPoints.length >= 2 && activeMRN) {
+            var pathCommands = allPoints.map(function (pt, idx) {
+              var px = sx(pt.gaDecimal).toFixed(1);
+              var py = sy(pt.cpr).toFixed(1);
+              return (idx === 0 ? 'M' : 'L') + ' ' + px + ' ' + py;
+            }).join(' ');
 
-          if (allPoints.length >= 2) {
             trajectoryGlow = '<path d="' + pathCommands + '" fill="none" stroke="#38bdf8" stroke-width="6" opacity="0.25" stroke-linecap="round" stroke-linejoin="round"/>';
             trajectoryPath = '<path d="' + pathCommands + '" fill="none" stroke="#38bdf8" stroke-width="2.5" stroke-dasharray="4,2" stroke-linecap="round" stroke-linejoin="round"/>';
           }
@@ -492,12 +535,13 @@
             var isAb = pt.centile < 5.0;
             var ptColor = isAb ? '#ff453a' : '#30d158';
             var isCur = !!pt.isCurrentPreview;
+            var nodeLabel = (allPoints.length > 1 && activeMRN) ? ('第' + (idx + 1) + '次 (' + pt.weeks + 'w)') : ('本次實測 (' + pt.weeks + 'w)');
 
             trajectoryMarkers +=
               '<g class="trajectory-node">' +
                 '<circle cx="' + px + '" cy="' + py + '" r="' + (isCur ? '8' : '6') + '" fill="' + ptColor + '" stroke="#ffffff" stroke-width="2"/>' +
                 '<text x="' + px + '" y="' + (py - 12) + '" font-size="10" font-weight="700" fill="#ffffff" text-anchor="middle">' +
-                  '第' + (idx + 1) + '次 (' + pt.weeks + 'w)' +
+                  nodeLabel +
                 '</text>' +
               '</g>';
           });
@@ -514,22 +558,22 @@
           document.getElementById('ls-trend-text').innerHTML =
             '探針：<b>' + scrubGA.toFixed(1) + '週</b> ｜ 中位數: <b>' + sRef.median.toFixed(2) + '</b> ｜ 5th門檻: <b class="text-rose-400">' + sRef.p5.toFixed(2) + '</b>';
         } else {
-          if (savedRecords.length >= 2) {
+          if (savedRecords.length >= 2 && activeMRN) {
             var first = savedRecords[0];
             var last = savedRecords[savedRecords.length - 1];
             var diffP = last.centile - first.centile;
             var isDrop = diffP < -15;
             document.getElementById('ls-trend-text').innerHTML =
-              '📈 縱向趨勢：' + first.weeks + 'w ➔ ' + last.weeks + 'w ' +
+              '📈 [' + activeMRN + '] 趨勢：' + first.weeks + 'w ➔ ' + last.weeks + 'w ' +
               (isDrop ? '<span class="text-rose-400 font-bold">(⚠️ 百分位自 ' + first.centile.toFixed(0) + '% 降至 ' + last.centile.toFixed(0) + '%)</span>'
                       : '<span class="text-emerald-400 font-bold">(百分位維持穩定)</span>');
           } else {
-            document.getElementById('ls-trend-text').textContent = '已記錄 ' + savedRecords.length + ' 次測量點 (折線已啟動)';
+            document.getElementById('ls-trend-text').textContent = activeMRN ? ('病歷 [' + activeMRN + '] 單次檢測') : '未指定病歷號（單次實測點）';
           }
         }
 
         document.getElementById('ls-patient-summary').textContent =
-          '病歷號: ' + activeMRN + ' · 共 ' + savedRecords.length + ' 次紀錄';
+          activeMRN ? ('病歷號: [' + activeMRN + '] · 累積 ' + savedRecords.length + ' 次測量') : '新病患 · 單次實測落點';
         document.getElementById('ls-status-dot').className =
           currentCalc.isAbnormal ? 'ls-dot-indicator dot-abnormal' : 'ls-dot-indicator dot-normal';
 
@@ -575,9 +619,6 @@
         }
       }
 
-      // =========================================================================
-      // 鍵盤輔助工具列與換格收起邏輯 (Dismiss / Next Keypad Toolbar)
-      // =========================================================================
       var inputSequence = ['input-patient-mrn', 'input-ga-weeks', 'input-ga-days', 'input-mca-pi', 'input-uma-pi'];
       var labels = {
         'input-patient-mrn': '病歷號',
@@ -606,7 +647,6 @@
             return;
           }
         }
-        // 若在最後一格，則收起鍵盤
         dismissKeyboard();
       }
 
@@ -620,19 +660,12 @@
       }
 
       function attachEvents() {
-        // 輸入連動
         inputSequence.forEach(function (id) {
           var el = document.getElementById(id);
           if (el) {
             el.addEventListener('input', recalculate);
             el.addEventListener('change', recalculate);
-
-            // 聚焦時彈出工具列
-            el.addEventListener('focus', function () {
-              showKeyboardToolbar(id);
-            });
-
-            // 按鍵盤 Enter 自動跳下一格或收起
+            el.addEventListener('focus', function () { showKeyboardToolbar(id); });
             el.addEventListener('keydown', function (e) {
               if (e.key === 'Enter') {
                 e.preventDefault();
@@ -642,7 +675,6 @@
           }
         });
 
-        // 鍵盤工具列按鈕
         document.getElementById('btn-kb-done')?.addEventListener('click', function (e) {
           e.preventDefault();
           dismissKeyboard();
@@ -653,7 +685,6 @@
           moveToNextInput();
         });
 
-        // 點擊畫面空白處自動收起鍵盤 (Tap Anywhere to Dismiss)
         document.addEventListener('click', function (e) {
           if (!e.target.closest('input, select, button, .ios-kb-toolbar')) {
             dismissKeyboard();
@@ -665,7 +696,12 @@
           }
         }, { passive: true });
 
-        // 近期病患選單切換
+        // ➕ 新病人按鈕
+        document.getElementById('btn-new-patient')?.addEventListener('click', function () {
+          startNewPatient();
+        });
+
+        // 近期病患選單切換 (明確載入特定病歷)
         document.getElementById('select-recent-patients')?.addEventListener('change', function (e) {
           if (e.target.value) {
             document.getElementById('input-patient-mrn').value = e.target.value;
@@ -676,9 +712,20 @@
         // 儲存本次量測按鈕
         document.getElementById('btn-save-measurement')?.addEventListener('click', function () {
           dismissKeyboard();
+          var mrnField = document.getElementById('input-patient-mrn');
+          var enteredMRN = mrnField ? mrnField.value.trim().toUpperCase() : '';
+          if (!enteredMRN) {
+            enteredMRN = prompt('請輸入此病患之病歷號 (MRN)：');
+            if (!enteredMRN || !enteredMRN.trim()) {
+              alert('未輸入病歷號，未儲存紀錄。');
+              return;
+            }
+            enteredMRN = enteredMRN.trim().toUpperCase();
+            if (mrnField) mrnField.value = enteredMRN;
+          }
+
           var timeStr = updateAutoTime();
-          activeMRN = (document.getElementById('input-patient-mrn').value || 'P109823').trim().toUpperCase();
-          var updated = DB.save(activeMRN, {
+          var updated = DB.save(enteredMRN, {
             weeks: currentCalc.weeks,
             days: currentCalc.days,
             gaDecimal: currentCalc.gaDecimal,
@@ -689,12 +736,12 @@
             isAbnormal: currentCalc.isAbnormal,
             timestamp: timeStr
           });
-          alert('✓ 已成功儲存至病歷號 [' + activeMRN + ']！\n當前累積 ' + updated.length + ' 次追蹤測量。');
+
+          alert('✓ 已成功儲存至病歷號 [' + enteredMRN + ']！\n該病患當前累積 ' + updated.length + ' 次追蹤測量。');
           recalculate();
           renderLandscapeChart();
         });
 
-        // 模式切換按鈕
         document.getElementById('btn-toggle-to-chart')?.addEventListener('click', function() {
           dismissKeyboard();
           setMode(true);

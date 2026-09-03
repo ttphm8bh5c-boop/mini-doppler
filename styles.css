@@ -99,10 +99,26 @@ body.mode-landscape .landscape-view {
 }
 
 .nav-title {
-  font-size: 1.25rem;
+  font-size: 1.15rem;
   font-weight: 700;
   letter-spacing: -0.02em;
   color: #1c1c1e;
+  line-height: 1.1;
+}
+
+.nav-patient-indicator {
+  font-size: 0.68rem;
+  display: block;
+  margin-top: 1px;
+}
+
+.nav-patient-indicator.text-muted {
+  color: #8e8e93;
+}
+
+.nav-patient-indicator.text-active {
+  color: #007aff;
+  font-weight: 700;
 }
 
 .nav-chart-btn {
@@ -134,21 +150,21 @@ body.mode-landscape .landscape-view {
 
 /* 1. 病歷號與時間卡片 */
 .patient-card {
-  padding: 12px 14px;
+  padding: 10px 14px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .patient-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
 }
 
 .patient-label {
-  font-size: 0.88rem;
+  font-size: 0.85rem;
   font-weight: 600;
   color: #1c1c1e;
   white-space: nowrap;
@@ -163,10 +179,11 @@ body.mode-landscape .landscape-view {
 }
 
 .mrn-input {
-  width: 120px;
+  flex: 1;
+  max-width: 140px;
   height: 32px;
   padding: 0 8px;
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 700;
   font-family: var(--ios-mono);
   background: #f2f2f7;
@@ -176,16 +193,37 @@ body.mode-landscape .landscape-view {
   text-transform: uppercase;
 }
 
-.recent-select {
-  height: 32px;
-  padding: 0 6px;
-  font-size: 0.74rem;
-  font-weight: 600;
-  background: #f2f2f7;
-  border: 1px solid var(--ios-separator);
+.btn-new-patient-action {
+  background: #e2e8f0;
+  border: none;
+  color: #0f172a;
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 6px 10px;
   border-radius: 7px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-new-patient-action:hover {
+  background: #cbd5e1;
+}
+
+.patient-switch-row {
+  display: flex;
+  width: 100%;
+}
+
+.recent-select-full {
+  width: 100%;
+  height: 28px;
+  padding: 0 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: #f8fafc;
+  border: 1px solid var(--ios-separator);
+  border-radius: 6px;
   color: #007aff;
-  max-width: 110px;
   cursor: pointer;
 }
 
