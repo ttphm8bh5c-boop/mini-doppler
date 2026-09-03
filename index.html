@@ -279,17 +279,40 @@
         if (!dateStr) return null;
         var s = String(dateStr).trim();
         if (!s) return null;
-        // 1. 純 8 碼數字 YYYYMMDD (例如 20261120)
-        var m8 = s.match(/^(\d{4})(\d{2})(\d{2})/);
+
+        var now = new Date();
+        var curYear = now.getFullYear();
+
+        // 1. 民國年格式：115/11/20 或 115-11-20
+        var mTw = s.match(/^(\d{2,3})[-/.\s](\d{1,2})[-/.\s](\d{1,2})$/);
+        if (mTw && parseInt(mTw[1], 10) < 1900) {
+          var yTw = parseInt(mTw[1], 10);
+          var fullYear = yTw > 50 ? (yTw + 1911) : (yTw + 2000);
+          return new Date(fullYear, parseInt(mTw[2], 10) - 1, parseInt(mTw[3], 10), 12, 0, 0);
+        }
+
+        // 2. 純 8 碼數字 YYYYMMDD (例如 20261120)
+        var m8 = s.match(/^(\d{4})(\d{2})(\d{2})$/);
         if (m8) {
           return new Date(parseInt(m8[1], 10), parseInt(m8[2], 10) - 1, parseInt(m8[3], 10), 12, 0, 0);
         }
-        // 2. 常見分隔符號 YYYY[-/. ]MM[-/. ]DD (例如 2026-11-20, 2026/11/20, 2026.11.20)
+
+        // 3. 常見完整日期 YYYY[-/. ]MM[-/. ]DD (例如 2026-11-20, 2026/11/20, 2026.11.20)
         var m = s.match(/^(\d{4})[-/.\s](\d{1,2})[-/.\s](\d{1,2})/);
         if (m) {
           return new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10), 12, 0, 0);
         }
-        // 3. 嘗試原生解析
+
+        // 4. 簡易月份/日期 MM/DD 或 MM-DD (省略年份，自動推估當年或次年)
+        var mShort = s.match(/^(\d{1,2})[-/.\s](\d{1,2})$/);
+        if (mShort) {
+          var mVal = parseInt(mShort[1], 10);
+          var dVal = parseInt(mShort[2], 10);
+          var targetYear = (mVal >= (now.getMonth() + 1)) ? curYear : (curYear + 1);
+          return new Date(targetYear, mVal - 1, dVal, 12, 0, 0);
+        }
+
+        // 5. 嘗試原生解析
         var d = new Date(s);
         if (!isNaN(d.getTime())) {
           return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12, 0, 0);
@@ -297,31 +320,50 @@
         return null;
       }
 
-      function syncGAFromEDD() {
+      function formatDateISO(d) {
+        if (!d) return '';
+        var y = d.getFullYear();
+        var m = String(d.getMonth() + 1).padStart(2, '0');
+        var day = String(d.getDate()).padStart(2, '0');
+        return y + '-' + m + '-' + day;
+      }
+
+      function syncGAFromEDD(showAlert) {
         var eddInput = document.getElementById('input-patient-edd');
         var timeInput = document.getElementById('input-measurement-time');
         var badge = document.getElementById('ga-auto-badge');
 
-        if (!eddInput || !eddInput.value || !eddInput.value.trim()) {
+        var eddVal = eddInput ? eddInput.value.trim() : '';
+        if (!eddVal) {
           if (badge) badge.classList.add('hidden');
+          if (showAlert) alert('請先在「預產期」輸入日期（例如 2026-11-20 或 11/20）！');
           return false;
         }
 
-        var eddDate = parseDateParts(eddInput.value);
-        var measureDate = parseDateParts(timeInput ? timeInput.value : '');
-        if (!eddDate || !measureDate) {
+        var eddDate = parseDateParts(eddVal);
+        if (!eddDate) {
           if (badge) {
-            badge.textContent = '⚠️ 請輸入正確日期格式 (例如 2026-11-20)';
+            badge.textContent = '⚠️ 無法識別日期 (請輸入例如 2026-11-20)';
             badge.classList.remove('hidden');
           }
+          if (showAlert) alert('無法識別預產期格式，請輸入例如：\n2026-11-20、2026/11/20 或 11/20');
           return false;
+        }
+
+        // 量測時間若空，以今天為準
+        var measureVal = timeInput ? timeInput.value.trim() : '';
+        var measureDate = parseDateParts(measureVal);
+        if (!measureDate) {
+          measureDate = new Date();
+          measureDate.setHours(12, 0, 0, 0);
+          updateAutoTime(true);
         }
 
         var msPerDay = 24 * 60 * 60 * 1000;
         var diffDays = Math.round((eddDate.getTime() - measureDate.getTime()) / msPerDay);
         var gaDays = 280 - diffDays;
 
-        if (gaDays >= 140 && gaDays <= 294) { // 20w ~ 42w
+        if (gaDays >= 28 && gaDays <= 315) { // 支援 4週 至 45週 全面覆蓋
           var weeks = Math.floor(gaDays / 7);
           var days = gaDays % 7;
           var wInput = document.getElementById('input-ga-weeks');
@@ -329,16 +371,24 @@
           if (wInput) wInput.value = weeks;
           if (dInput) dInput.value = days;
           if (badge) {
-            badge.textContent = '⚡ 由預產期推算 (' + weeks + '+' + days + 'w)';
+            badge.textContent = '⚡ 由預產期推算：' + weeks + '週+' + days + '天';
             badge.classList.remove('hidden');
           }
+          if (showAlert) {
+            alert('✓ 換算成功！\n\n預產期：' + formatDateISO(eddDate) + '\n量測日：' + formatDateISO(measureDate) + '\n\n換算懷孕週數：' + weeks + ' 週 + ' + days + ' 天\n（CPR 數值與百分位數已同步更新）');
+          }
           return true;
-        } else if (badge) {
+        } else {
           var wApprox = Math.floor(gaDays / 7);
-          badge.textContent = gaDays < 140 ? ('⚠️ 推算未滿 20 週 (' + wApprox + 'w)') : ('⚠️ 推算超過 42 週 (' + wApprox + 'w)');
-          badge.classList.remove('hidden');
+          if (badge) {
+            badge.textContent = '⚠️ 推算週數為 ' + wApprox + ' 週 (超出合理範圍)';
+            badge.classList.remove('hidden');
+          }
+          if (showAlert) {
+            alert('換算結果為 ' + wApprox + ' 週，已超出合理懷孕範圍，請檢查預產期年份或量測日期是否正確！');
+          }
+          return false;
         }
-        return false;
       }
 
       function syncEDDFromGA() {
@@ -937,20 +987,23 @@
           renderLandscapeChart();
         });
 
-        function handleDateSync() {
-          if (syncGAFromEDD()) {
+        function handleDateSync(showAlert) {
+          var ok = syncGAFromEDD(showAlert);
+          if (ok) {
             recalculate();
           }
         }
         document.getElementById('btn-calc-ga')?.addEventListener('click', function() {
-          handleDateSync();
+          handleDateSync(true);
         });
-        document.getElementById('input-patient-edd')?.addEventListener('change', handleDateSync);
-        document.getElementById('input-patient-edd')?.addEventListener('input', handleDateSync);
-        document.getElementById('input-patient-edd')?.addEventListener('keyup', handleDateSync);
-        document.getElementById('input-measurement-time')?.addEventListener('change', handleDateSync);
-        document.getElementById('input-measurement-time')?.addEventListener('input', handleDateSync);
-        document.getElementById('input-measurement-time')?.addEventListener('keyup', handleDateSync);
+        ['input', 'change', 'keyup', 'paste'].forEach(function(evtName) {
+          document.getElementById('input-patient-edd')?.addEventListener(evtName, function() {
+            handleDateSync(false);
+          });
+          document.getElementById('input-measurement-time')?.addEventListener(evtName, function() {
+            handleDateSync(false);
+          });
+        });
 
         document.getElementById('btn-toggle-to-chart')?.addEventListener('click', function() {
           dismissKeyboard();
