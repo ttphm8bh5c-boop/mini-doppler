@@ -3,20 +3,28 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>CPR 計算器</title>
+  <title>CPR 計算器 (方案三：直屏輸入 + 橫屏大圖)</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
-<body>
-  <div class="iphone-container">
-    <!-- iOS Navigation Bar -->
+<body class="mode-portrait">
+
+  <!-- =========================================================================
+       模式一：直屏模式 (Portrait Mode) - 專注於手指極速輸入與大字結果
+       ========================================================================= -->
+  <div id="container-portrait" class="view-container portrait-view">
+    <!-- iOS 頂部導航列 -->
     <header class="ios-nav-bar">
-      <h1 class="nav-title">CPR 計算器</h1>
+      <div class="nav-content">
+        <h1 class="nav-title">CPR 計算器</h1>
+        <button type="button" id="btn-toggle-to-chart" class="nav-chart-btn" title="切換橫屏全幅圖表">
+          📊 全螢幕圖表
+        </button>
+      </div>
     </header>
 
-    <!-- Main Content Stream (iOS Inset Grouped Style) -->
-    <main class="ios-main-content">
-
-      <!-- 1. 頂部：CPR 結果大卡片 (Result Card) -->
+    <!-- 直向主體內容區 (充足留白，虛擬鍵盤彈起時絕不遮擋輸入與結果) -->
+    <main class="portrait-body">
+      <!-- 1. CPR 核心結果大卡片 -->
       <section class="ios-card result-hero-card">
         <div class="hero-cpr-header">
           <span class="hero-label">CPR 數值</span>
@@ -30,13 +38,13 @@
 
         <div class="hero-footer-row">
           <span id="display-cpr-status-badge" class="ios-badge badge-normal">
-            ✓ 正常
+            ✓ 正常 (≥ 第 5 百分位)
           </span>
-          <span class="hero-hint">FMF 2019 標準</span>
+          <span class="hero-hint">FMF 2019 參考標準</span>
         </div>
       </section>
 
-      <!-- 2. 中間：3 個單手輸入格 (iOS Inset Grouped List) -->
+      <!-- 2. 3 個單手手指輸入格 (44pt+ 觸控高度，直向居中) -->
       <section class="ios-card inputs-card">
         <!-- 懷孕週數 -->
         <div class="ios-list-row">
@@ -63,19 +71,62 @@
         </div>
       </section>
 
-      <!-- 3. 底部：CPR 參考曲線圖 (Chart Card) -->
-      <section class="ios-card chart-card">
-        <div class="chart-header-row">
-          <span class="chart-title">CPR 懷孕週數曲線 (20–42 週)</span>
+      <!-- 3. 機台橫屏提示卡片 (點擊或旋轉手機即進入大圖表) -->
+      <section class="landscape-tip-card" id="card-tip-landscape">
+        <div class="tip-icon">🔄</div>
+        <div class="tip-text-box">
+          <div class="tip-title">手機轉橫即可查看全螢幕動態大圖表</div>
+          <div class="tip-desc">全幅展示 20–42 週參考曲線，支援手指滑動探查每一週數值。</div>
         </div>
-        <div id="chart-mount" class="chart-mount-box"></div>
+        <button type="button" id="btn-action-open-chart" class="tip-open-btn">
+          開啟圖表 ↗
+        </button>
       </section>
-
     </main>
   </div>
 
+
+  <!-- =========================================================================
+       模式二：橫屏模式 (Landscape Mode) - 全螢幕醫療機台級大圖表
+       ========================================================================= -->
+  <div id="container-landscape" class="view-container landscape-view">
+    <!-- 橫屏頂部精簡控制列 -->
+    <header class="landscape-header">
+      <div class="ls-patient-badge">
+        <span class="ls-dot-indicator" id="ls-status-dot"></span>
+        <span id="ls-patient-summary">28.57週 · CPR 2.11 (78.8% 正常)</span>
+      </div>
+
+      <div class="ls-scrub-readout" id="ls-scrub-readout">
+        觸碰或滑動圖表探查參考數值
+      </div>
+
+      <button type="button" id="btn-back-to-input" class="ls-back-btn">
+        ↺ 返回輸入
+      </button>
+    </header>
+
+    <!-- 橫屏全螢幕 SVG 畫布 -->
+    <div id="landscape-chart-mount" class="landscape-chart-container"></div>
+  </div>
+
+
+  <!-- 內建純原生互動演算法腳本 (免除 WebKit 檔案協定安全限制，毫秒級連動) -->
   <script>
     (function () {
+      // 狀態管理
+      var state = {
+        weeks: 28,
+        days: 4,
+        mca: 1.79,
+        uma: 0.85,
+        gaDecimal: 28.57,
+        cpr: 2.11,
+        centile: 78.8,
+        isAbnormal: false,
+        isForceLandscape: false
+      };
+
       function normalCDF(z) {
         var t = 1.0 / (1.0 + 0.3275911 * Math.abs(z));
         var poly = ((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t;
@@ -93,10 +144,69 @@
         return { median: median, sd: sd, p5: p5, p95: p95, logMedian: logMedian };
       }
 
-      function renderChart(container, patientGA, patientCPR, isAbnormal) {
-        var width = 350;
-        var height = 210;
-        var padding = { top: 16, right: 18, bottom: 28, left: 36 };
+      function recalculate() {
+        var w = parseInt(document.getElementById('input-ga-weeks').value, 10);
+        var d = parseInt(document.getElementById('input-ga-days').value, 10);
+        var mca = parseFloat(document.getElementById('input-mca-pi').value);
+        var uma = parseFloat(document.getElementById('input-uma-pi').value);
+
+        if (isNaN(w) || w < 20 || w > 42) w = 28;
+        if (isNaN(d) || d < 0 || d > 6) d = 0;
+        if (isNaN(mca) || mca <= 0) mca = 1.0;
+        if (isNaN(uma) || uma <= 0) uma = 1.0;
+
+        var gaDays = (w * 7) + d;
+        var gaDec = w + (d / 7);
+        var cpr = mca / uma;
+
+        var ref = getFMFCPRReference(gaDays);
+        var z = (Math.log10(cpr) - ref.logMedian) / ref.sd;
+        var centile = normalCDF(z) * 100.0;
+        var isAbnormal = centile < 5.0;
+
+        state.weeks = w;
+        state.days = d;
+        state.mca = mca;
+        state.uma = uma;
+        state.gaDecimal = gaDec;
+        state.cpr = cpr;
+        state.centile = centile;
+        state.isAbnormal = isAbnormal;
+
+        // 更新直屏介面
+        document.getElementById('display-cpr-num').textContent = cpr.toFixed(2);
+        var pText = centile < 1.0 ? '< 1%' : (centile > 99.0 ? '> 99%' : centile.toFixed(1) + '%');
+        document.getElementById('display-cpr-centile').textContent = pText;
+
+        var badge = document.getElementById('display-cpr-status-badge');
+        if (isAbnormal) {
+          badge.className = 'ios-badge badge-abnormal';
+          badge.textContent = '⚠️ 異常 (< 第 5 百分位)';
+        } else {
+          badge.className = 'ios-badge badge-normal';
+          badge.textContent = '✓ 正常 (≥ 第 5 百分位)';
+        }
+
+        // 更新橫屏頂部資訊
+        var summary = document.getElementById('ls-patient-summary');
+        var dot = document.getElementById('ls-status-dot');
+        summary.textContent = gaDec.toFixed(1) + '週 · CPR ' + cpr.toFixed(2) + ' (' + pText + (isAbnormal ? ' 異常' : ' 正常') + ')';
+        dot.className = isAbnormal ? 'ls-dot-indicator dot-abnormal' : 'ls-dot-indicator dot-normal';
+
+        // 重新繪製橫屏全螢幕圖表
+        renderLandscapeChart();
+      }
+
+      // 繪製橫屏全螢幕圖表 (支援手指觸摸探查)
+      function renderLandscapeChart(scrubGA) {
+        var container = document.getElementById('landscape-chart-mount');
+        if (!container) return;
+
+        var rect = container.getBoundingClientRect();
+        var width = Math.max(rect.width || 700, 600);
+        var height = Math.max(rect.height || 360, 320);
+
+        var padding = { top: 25, right: 35, bottom: 35, left: 45 };
         var plotW = width - padding.left - padding.right;
         var plotH = height - padding.top - padding.bottom;
 
@@ -105,15 +215,16 @@
         var minY = 0.4;
         var maxY = 3.0;
 
-        if (patientCPR !== null && patientCPR > maxY) {
-          maxY = Math.ceil(patientCPR * 1.15 * 10) / 10;
+        if (state.cpr > maxY) {
+          maxY = Math.ceil(state.cpr * 1.15 * 10) / 10;
         }
 
         function sx(x) { return padding.left + ((x - minX) / (maxX - minX)) * plotW; }
         function sy(y) { return padding.top + plotH - ((y - minY) / (maxY - minY)) * plotH; }
+        function invX(px) { return minX + ((px - padding.left) / plotW) * (maxX - minX); }
 
         var points = [];
-        for (var ga = 20.0; ga <= 42.0; ga += 1.0) {
+        for (var ga = 20.0; ga <= 42.0; ga += 0.5) {
           var ref = getFMFCPRReference(ga * 7);
           points.push({ ga: ga, p5: ref.p5, p50: ref.median, p95: ref.p95 });
         }
@@ -126,109 +237,135 @@
         var backward5 = points.slice().reverse().map(function (d) { return 'L ' + sx(d.ga).toFixed(1) + ' ' + sy(d.p5).toFixed(1); }).join(' ');
         var shadedBand = forward95 + ' ' + backward5 + ' Z';
 
+        // 垂直週數刻度線
         var gridX = '';
-        var weekTicks = [20, 24, 28, 32, 36, 40];
-        for (var i = 0; i < weekTicks.length; i++) {
-          var w = weekTicks[i];
-          var x = sx(w);
-          gridX += '<line x1="' + x + '" y1="' + padding.top + '" x2="' + x + '" y2="' + (padding.top + plotH) + '" stroke="#e5e5ea" stroke-width="1" stroke-dasharray="2,2"/>' +
-                   '<text x="' + x + '" y="' + (padding.top + plotH + 15) + '" font-size="10" fill="#8e8e93" text-anchor="middle">' + w + 'w</text>';
+        for (var w = 20; w <= 42; w += 2) {
+          var gx = sx(w);
+          gridX += '<line x1="' + gx + '" y1="' + padding.top + '" x2="' + gx + '" y2="' + (padding.top + plotH) + '" stroke="#334155" stroke-width="1" stroke-dasharray="2,2"/>' +
+                   '<text x="' + gx + '" y="' + (padding.top + plotH + 18) + '" font-size="11" fill="#94a3b8" text-anchor="middle">' + w + 'w</text>';
         }
 
+        // 水平 CPR 刻度線
         var gridY = '';
-        var yTicks = [1.0, 2.0];
-        for (var j = 0; j < yTicks.length; j++) {
-          var yVal = yTicks[j];
-          var y = sy(yVal);
-          gridY += '<line x1="' + padding.left + '" y1="' + y + '" x2="' + (padding.left + plotW) + '" y2="' + y + '" stroke="#e5e5ea" stroke-width="1" stroke-dasharray="2,2"/>' +
-                   '<text x="' + (padding.left - 6) + '" y="' + (y + 3) + '" font-size="10" fill="#8e8e93" text-anchor="end">' + yVal.toFixed(1) + '</text>';
+        for (var yVal = 0.5; yVal <= maxY + 0.001; yVal += 0.5) {
+          var gy = sy(yVal);
+          gridY += '<line x1="' + padding.left + '" y1="' + gy + '" x2="' + (padding.left + plotW) + '" y2="' + gy + '" stroke="#334155" stroke-width="1" stroke-dasharray="2,2"/>' +
+                   '<text x="' + (padding.left - 8) + '" y="' + (gy + 4) + '" font-size="11" fill="#94a3b8" text-anchor="end">' + yVal.toFixed(1) + '</text>';
         }
 
+        // 病患實測落點 (顯眼標記)
         var patientMarker = '';
-        if (patientGA !== null && patientCPR !== null && patientGA >= minX && patientGA <= maxX) {
-          var px = sx(patientGA);
-          var py = sy(patientCPR);
-          var markerColor = isAbnormal ? '#ff3b30' : '#34c759';
+        if (state.gaDecimal >= minX && state.gaDecimal <= maxX) {
+          var pX = sx(state.gaDecimal);
+          var pY = sy(state.cpr);
+          var pColor = state.isAbnormal ? '#ff3b30' : '#34c759';
 
-          patientMarker = '<line x1="' + px + '" y1="' + padding.top + '" x2="' + px + '" y2="' + (padding.top + plotH) + '" stroke="' + markerColor + '" stroke-width="1.5" stroke-dasharray="3,3" opacity="0.6"/>' +
-                          '<circle cx="' + px + '" cy="' + py + '" r="8" fill="' + markerColor + '" opacity="0.25"/>' +
-                          '<circle cx="' + px + '" cy="' + py + '" r="5" fill="' + markerColor + '" stroke="#ffffff" stroke-width="2"/>';
+          patientMarker = '<line x1="' + pX + '" y1="' + padding.top + '" x2="' + pX + '" y2="' + (padding.top + plotH) + '" stroke="' + pColor + '" stroke-width="1.5" stroke-dasharray="3,3"/>' +
+                          '<circle cx="' + pX + '" cy="' + pY + '" r="12" fill="' + pColor + '" opacity="0.3"/>' +
+                          '<circle cx="' + pX + '" cy="' + pY + '" r="6" fill="' + pColor + '" stroke="#ffffff" stroke-width="2"/>' +
+                          '<g transform="translate(' + (pX > plotW / 2 + padding.left ? pX - 110 : pX + 12) + ', ' + (pY < 60 ? pY + 18 : pY - 18) + ')">' +
+                            '<rect width="100" height="24" rx="4" fill="#0f172a" opacity="0.9" stroke="#334155"/>' +
+                            '<text x="50" y="16" fill="#ffffff" font-size="11" font-weight="700" text-anchor="middle">實測: CPR ' + state.cpr.toFixed(2) + '</text>' +
+                          '</g>';
         }
 
-        container.innerHTML = '<svg viewBox="0 0 ' + width + ' ' + height + '" class="ios-svg" preserveAspectRatio="xMidYMid meet">' +
-            '<rect x="' + padding.left + '" y="' + padding.top + '" width="' + plotW + '" height="' + plotH + '" fill="#f9f9fb" rx="4"/>' +
-            gridX +
-            gridY +
-            '<path d="' + shadedBand + '" fill="#e1f0ff" opacity="0.8"/>' +
-            '<path d="' + path95 + '" fill="none" stroke="#8e8e93" stroke-width="1.5" stroke-dasharray="3,3"/>' +
-            '<path d="' + path50 + '" fill="none" stroke="#007aff" stroke-width="2"/>' +
-            '<path d="' + path5 + '" fill="none" stroke="#ff3b30" stroke-width="1.8"/>' +
-            patientMarker +
-          '</svg>' +
-          '<div class="ios-legend-row">' +
-            '<span class="legend-item"><span class="swatch-50"></span> 50th (中位數)</span>' +
-            '<span class="legend-item"><span class="swatch-5"></span> 5th (異常線)</span>' +
-            (patientCPR !== null ? '<span class="legend-item"><span class="swatch-dot ' + (isAbnormal ? 'dot-abnormal' : 'dot-normal') + '"></span> 實測點</span>' : '') +
-          '</div>';
+        // 手指滑動探查游標 (Interactive Scrubber)
+        var scrubberMarkup = '';
+        if (typeof scrubGA === 'number' && scrubGA >= minX && scrubGA <= maxX) {
+          var sX = sx(scrubGA);
+          var sRef = getFMFCPRReference(scrubGA * 7);
+          scrubberMarkup = '<line x1="' + sX + '" y1="' + padding.top + '" x2="' + sX + '" y2="' + (padding.top + plotH) + '" stroke="#38bdf8" stroke-width="2"/>' +
+                           '<circle cx="' + sX + '" cy="' + sy(sRef.median) + '" r="4" fill="#38bdf8" stroke="#ffffff"/>' +
+                           '<circle cx="' + sX + '" cy="' + sy(sRef.p5) + '" r="4" fill="#ff453a" stroke="#ffffff"/>';
+
+          // 更新頂部探查數值字串
+          document.getElementById('ls-scrub-readout').innerHTML =
+            '探針位置：<b class="text-sky-400">' + scrubGA.toFixed(1) + ' 週</b> ｜ 中位數: <b>' + sRef.median.toFixed(2) + '</b> ｜ 第 5 百分位(門檻): <b class="text-rose-400">' + sRef.p5.toFixed(2) + '</b>';
+        }
+
+        container.innerHTML = '<svg id="interactive-svg" viewBox="0 0 ' + width + ' ' + height + '" class="ls-svg" preserveAspectRatio="xMidYMid meet">' +
+          '<rect x="' + padding.left + '" y="' + padding.top + '" width="' + plotW + '" height="' + plotH + '" fill="#090d16" rx="6"/>' +
+          gridX +
+          gridY +
+          '<path d="' + shadedBand + '" fill="#0284c7" opacity="0.25"/>' +
+          '<path d="' + path95 + '" fill="none" stroke="#64748b" stroke-width="1.5" stroke-dasharray="4,4"/>' +
+          '<path d="' + path50 + '" fill="none" stroke="#38bdf8" stroke-width="2.5"/>' +
+          '<path d="' + path5 + '" fill="none" stroke="#ff453a" stroke-width="2"/>' +
+          '<text x="' + scaleEnd(scaleX, 41.5) + '" y="' + (sy(points[points.length-1].p50) - 6) + '" font-size="10" fill="#38bdf8" font-weight="600">50th 中位數</text>' +
+          '<text x="' + scaleEnd(scaleX, 41.5) + '" y="' + (sy(points[points.length-1].p5) + 12) + '" font-size="10" fill="#ff453a" font-weight="600">5th 異常線</text>' +
+          patientMarker +
+          scrubberMarkup +
+          '<text x="' + (padding.left + plotW / 2) + '" y="' + (height - 6) + '" font-size="11" font-weight="600" fill="#94a3b8" text-anchor="middle">懷孕週數 (Gestational Age, weeks)</text>' +
+          '<text transform="rotate(-90)" x="' + (-(padding.top + plotH / 2)) + '" y="14" font-size="11" font-weight="600" fill="#94a3b8" text-anchor="middle">CPR 數值</text>' +
+        '</svg>';
+
+        function scaleEnd(fn, val) { return fn(val); }
+        function scaleX(v) { return sx(v); }
+
+        // 綁定手指觸碰與滑鼠滑動探針事件
+        var svgEl = document.getElementById('interactive-svg');
+        if (svgEl) {
+          function handlePointer(evt) {
+            var clientX = evt.touches ? evt.touches[0].clientX : evt.clientX;
+            var cRect = svgEl.getBoundingClientRect();
+            var relX = (clientX - cRect.left) * (width / cRect.width);
+            if (relX >= padding.left && relX <= padding.left + plotW) {
+              var targetGA = invX(relX);
+              renderLandscapeChart(targetGA);
+            }
+          }
+
+          svgEl.addEventListener('mousemove', handlePointer);
+          svgEl.addEventListener('touchmove', handlePointer, { passive: true });
+        }
       }
 
-      function calculate() {
-        var w = parseInt(document.getElementById('input-ga-weeks').value, 10);
-        var d = parseInt(document.getElementById('input-ga-days').value, 10);
-        var mca = parseFloat(document.getElementById('input-mca-pi').value);
-        var uma = parseFloat(document.getElementById('input-uma-pi').value);
-
-        var cprDisplay = document.getElementById('display-cpr-num');
-        var centileDisplay = document.getElementById('display-cpr-centile');
-        var badgeDisplay = document.getElementById('display-cpr-status-badge');
-        var chartMount = document.getElementById('chart-mount');
-
-        if (isNaN(w) || w < 20 || w > 42) w = 28;
-        if (isNaN(d) || d < 0 || d > 6) d = 0;
-        if (isNaN(mca) || mca <= 0) mca = 1.0;
-        if (isNaN(uma) || uma <= 0) uma = 1.0;
-
-        var gaDays = (w * 7) + d;
-        var gaDec = w + (d / 7);
-        var cpr = mca / uma;
-
-        cprDisplay.textContent = cpr.toFixed(2);
-
-        var ref = getFMFCPRReference(gaDays);
-        var z = (Math.log10(cpr) - ref.logMedian) / ref.sd;
-        var centile = normalCDF(z) * 100.0;
-
-        var pText = centile < 1.0 ? '< 1%' : (centile > 99.0 ? '> 99%' : centile.toFixed(1) + '%');
-        centileDisplay.textContent = pText;
-
-        var isAbnormal = centile < 5.0;
-        if (isAbnormal) {
-          badgeDisplay.className = 'ios-badge badge-abnormal';
-          badgeDisplay.textContent = '⚠️ 異常 (< 5%)';
+      // 視窗方向切換處理
+      function setMode(isLandscape) {
+        state.isForceLandscape = isLandscape;
+        if (isLandscape) {
+          document.body.classList.remove('mode-portrait');
+          document.body.classList.add('mode-landscape');
+          setTimeout(function() { renderLandscapeChart(); }, 50);
         } else {
-          badgeDisplay.className = 'ios-badge badge-normal';
-          badgeDisplay.textContent = '✓ 正常';
+          document.body.classList.remove('mode-landscape');
+          document.body.classList.add('mode-portrait');
         }
-
-        renderChart(chartMount, gaDec, cpr, isAbnormal);
       }
 
-      function attach() {
+      function init() {
         var inputs = ['input-ga-weeks', 'input-ga-days', 'input-mca-pi', 'input-uma-pi'];
         inputs.forEach(function (id) {
           var el = document.getElementById(id);
           if (el) {
-            el.addEventListener('input', calculate);
-            el.addEventListener('change', calculate);
+            el.addEventListener('input', recalculate);
+            el.addEventListener('change', recalculate);
           }
         });
-        calculate();
+
+        // 切換橫屏 / 直屏按鈕
+        document.getElementById('btn-toggle-to-chart')?.addEventListener('click', function() { setMode(true); });
+        document.getElementById('btn-action-open-chart')?.addEventListener('click', function() { setMode(true); });
+        document.getElementById('btn-back-to-input')?.addEventListener('click', function() { setMode(false); });
+
+        // 偵測螢幕旋轉 (實機 iPhone 自動轉向切換)
+        window.addEventListener('resize', function () {
+          var isLandscape = window.innerWidth > window.innerHeight;
+          if (isLandscape) {
+            setMode(true);
+          } else if (!state.isForceLandscape) {
+            setMode(false);
+          }
+        });
+
+        // 初始計算
+        recalculate();
       }
 
       if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', attach);
+        document.addEventListener('DOMContentLoaded', init);
       } else {
-        attach();
+        init();
       }
     })();
   </script>
