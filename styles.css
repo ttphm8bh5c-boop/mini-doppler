@@ -604,3 +604,64 @@ body.mode-landscape .landscape-view {
   max-height: 90vh;
   cursor: crosshair;
 }
+
+/* ==========================================================================
+   iOS 鍵盤專屬工具列 (浮動在鍵盤上方)
+   ========================================================================== */
+.ios-kb-toolbar {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 414px;
+  background: rgba(248, 250, 252, 0.96);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid var(--ios-separator);
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 999;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.08);
+}
+
+.ios-kb-toolbar.hidden {
+  display: none !important;
+}
+
+.kb-current-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.kb-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.kb-action-btn {
+  background: #e2e8f0;
+  color: #0f172a;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+}
+
+.kb-done-btn {
+  background: var(--ios-blue);
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+}
+

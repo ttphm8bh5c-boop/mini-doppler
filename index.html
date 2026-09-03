@@ -36,7 +36,7 @@
         </div>
         <div class="patient-time-row">
           <span class="time-label">量測時間（自動鍵入）：</span>
-          <span id="display-auto-time" class="time-value">2026-09-03 08:38</span>
+          <span id="display-auto-time" class="time-value">2026-09-03 08:42</span>
         </div>
       </section>
 
@@ -136,12 +136,26 @@
   </div>
 
 
+  <!-- =========================================================================
+       iOS 鍵盤專屬工具列 (Keyboard Accessory Toolbar)
+       當點擊任何輸入框時自動浮現，附帶「下一格」與「完成/收起鍵盤」
+       ========================================================================= -->
+  <div id="ios-kb-toolbar" class="ios-kb-toolbar hidden">
+    <div class="kb-toolbar-left">
+      <span class="kb-current-label" id="kb-current-label">輸入中...</span>
+    </div>
+    <div class="kb-toolbar-right">
+      <button type="button" id="btn-kb-next" class="kb-action-btn">下一格 ➔</button>
+      <button type="button" id="btn-kb-done" class="kb-done-btn">完成 ✕</button>
+    </div>
+  </div>
+
+
   <!-- 內建純原生資料持久化與縱向趨勢圖表腳本 (100% 離線本地儲存) -->
   <script>
     (function () {
       var STORAGE_KEY = 'fetal_doppler_patients_v1';
 
-      // 本地資料儲存函式庫
       var DB = {
         getAll: function () {
           try {
@@ -211,7 +225,6 @@
         }
       };
 
-      // FMF 2019 統計演算法
       function normalCDF(z) {
         var t = 1.0 / (1.0 + 0.3275911 * Math.abs(z));
         var poly = ((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t;
@@ -229,7 +242,6 @@
         return { median: median, sd: sd, p5: p5, p95: p95, logMedian: logMedian };
       }
 
-      // 應用狀態
       var currentCalc = {
         weeks: 28,
         days: 4,
@@ -285,7 +297,6 @@
         currentCalc.centile = centile;
         currentCalc.isAbnormal = isAbnormal;
 
-        // 更新直屏卡片
         document.getElementById('display-cpr-num').textContent = cpr.toFixed(2);
         var pText = centile < 1.0 ? '< 1%' : (centile > 99.0 ? '> 99%' : centile.toFixed(1) + '%');
         document.getElementById('display-cpr-centile').textContent = pText;
@@ -299,7 +310,6 @@
           badge.textContent = '✓ 正常 (≥ 第 5 百分位)';
         }
 
-        // 比較歷史趨勢
         updateTrendBadgeAndTimeline();
       }
 
@@ -311,12 +321,10 @@
         var trendBadge = document.getElementById('display-trend-badge');
         var listMount = document.getElementById('history-list-mount');
 
-        // 1. 趨勢徽章邏輯
         if (records.length === 0) {
           trendBadge.className = 'trend-badge badge-stable';
           trendBadge.textContent = '首次紀錄';
         } else {
-          // 比對上一次測量
           var lastRec = records[records.length - 1];
           var deltaP = currentCalc.centile - lastRec.centile;
 
@@ -335,7 +343,6 @@
           }
         }
 
-        // 2. 渲染歷程清單 (由新到舊展示)
         if (records.length === 0) {
           listMount.innerHTML = '<div class="history-empty">尚無歷史追蹤紀錄，點擊上方按鈕儲存第 1 次測量。</div>';
         } else {
@@ -360,7 +367,6 @@
           }
           listMount.innerHTML = html;
 
-          // 綁定刪除事件
           var delBtns = listMount.querySelectorAll('.btn-del-rec');
           delBtns.forEach(function (btn) {
             btn.addEventListener('click', function (e) {
@@ -375,7 +381,6 @@
           });
         }
 
-        // 更新近期病患選單
         updateRecentPatientsDropdown();
       }
 
@@ -392,9 +397,7 @@
         if (current) sel.value = current;
       }
 
-      // =========================================================================
-      // 橫屏全螢幕多時點趨勢折線圖 (Multi-point Trajectory Chart)
-      // =========================================================================
+      // 橫屏趨勢折線圖
       function renderLandscapeChart(scrubGA) {
         var container = document.getElementById('landscape-chart-mount');
         if (!container) return;
@@ -412,11 +415,9 @@
         var minY = 0.4;
         var maxY = 3.0;
 
-        // 取得該病患全部已儲存紀錄 + 本次測量點
         var savedRecords = DB.getRecords(activeMRN);
         var allPoints = savedRecords.slice();
 
-        // 若本次測量尚未儲存，仍將當前實測點納入圖表預覽
         var hasCurrent = savedRecords.some(function (r) {
           return Math.abs(r.gaDecimal - currentCalc.gaDecimal) < 0.05 && Math.abs(r.cpr - currentCalc.cpr) < 0.02;
         });
@@ -442,7 +443,6 @@
         function sy(y) { return padding.top + plotH - ((y - minY) / (maxY - minY)) * plotH; }
         function invX(px) { return minX + ((px - padding.left) / plotW) * (maxX - minX); }
 
-        // 基準曲線
         var refPoints = [];
         for (var ga = 20.0; ga <= 42.0; ga += 0.5) {
           var ref = getFMFCPRReference(ga * 7);
@@ -456,7 +456,6 @@
         var backward5 = refPoints.slice().reverse().map(function (d) { return 'L ' + sx(d.ga).toFixed(1) + ' ' + sy(d.p5).toFixed(1); }).join(' ');
         var shadedBand = forward95 + ' ' + backward5 + ' Z';
 
-        // 網格線
         var gridX = '';
         for (var w = 20; w <= 42; w += 2) {
           var gx = sx(w);
@@ -471,7 +470,6 @@
                    '<text x="' + (padding.left - 8) + '" y="' + (gy + 4) + '" font-size="11" fill="#64748b" text-anchor="end">' + yVal.toFixed(1) + '</text>';
         }
 
-        // ==================== 關鍵核心：繪製縱向多點追蹤趨勢折線 ====================
         var trajectoryPath = '';
         var trajectoryGlow = '';
         var trajectoryMarkers = '';
@@ -484,13 +482,10 @@
           }).join(' ');
 
           if (allPoints.length >= 2) {
-            // 發光折線光暈
             trajectoryGlow = '<path d="' + pathCommands + '" fill="none" stroke="#38bdf8" stroke-width="6" opacity="0.25" stroke-linecap="round" stroke-linejoin="round"/>';
-            // 主趨勢折線
             trajectoryPath = '<path d="' + pathCommands + '" fill="none" stroke="#38bdf8" stroke-width="2.5" stroke-dasharray="4,2" stroke-linecap="round" stroke-linejoin="round"/>';
           }
 
-          // 繪製每個追蹤點
           allPoints.forEach(function (pt, idx) {
             var px = sx(pt.gaDecimal);
             var py = sy(pt.cpr);
@@ -508,7 +503,6 @@
           });
         }
 
-        // 探查游標 (Scrubber)
         var scrubberMarkup = '';
         if (typeof scrubGA === 'number' && scrubGA >= minX && scrubGA <= maxX) {
           var sX = sx(scrubGA);
@@ -520,7 +514,6 @@
           document.getElementById('ls-trend-text').innerHTML =
             '探針：<b>' + scrubGA.toFixed(1) + '週</b> ｜ 中位數: <b>' + sRef.median.toFixed(2) + '</b> ｜ 5th門檻: <b class="text-rose-400">' + sRef.p5.toFixed(2) + '</b>';
         } else {
-          // 總結趨勢文字
           if (savedRecords.length >= 2) {
             var first = savedRecords[0];
             var last = savedRecords[savedRecords.length - 1];
@@ -535,7 +528,6 @@
           }
         }
 
-        // 頂部摘要
         document.getElementById('ls-patient-summary').textContent =
           '病歷號: ' + activeMRN + ' · 共 ' + savedRecords.length + ' 次紀錄';
         document.getElementById('ls-status-dot').className =
@@ -583,16 +575,95 @@
         }
       }
 
+      // =========================================================================
+      // 鍵盤輔助工具列與換格收起邏輯 (Dismiss / Next Keypad Toolbar)
+      // =========================================================================
+      var inputSequence = ['input-patient-mrn', 'input-ga-weeks', 'input-ga-days', 'input-mca-pi', 'input-uma-pi'];
+      var labels = {
+        'input-patient-mrn': '病歷號',
+        'input-ga-weeks': '懷孕週數 (週)',
+        'input-ga-days': '懷孕週數 (天)',
+        'input-mca-pi': 'MCA PI',
+        'input-uma-pi': 'UmA PI'
+      };
+
+      function dismissKeyboard() {
+        if (document.activeElement && document.activeElement.blur) {
+          document.activeElement.blur();
+        }
+        var toolbar = document.getElementById('ios-kb-toolbar');
+        if (toolbar) toolbar.classList.add('hidden');
+      }
+
+      function moveToNextInput() {
+        var activeId = document.activeElement ? document.activeElement.id : null;
+        var idx = inputSequence.indexOf(activeId);
+        if (idx !== -1 && idx < inputSequence.length - 1) {
+          var nextEl = document.getElementById(inputSequence[idx + 1]);
+          if (nextEl) {
+            nextEl.focus();
+            if (nextEl.select) nextEl.select();
+            return;
+          }
+        }
+        // 若在最後一格，則收起鍵盤
+        dismissKeyboard();
+      }
+
+      function showKeyboardToolbar(inputId) {
+        var toolbar = document.getElementById('ios-kb-toolbar');
+        var labelEl = document.getElementById('kb-current-label');
+        if (toolbar && labelEl) {
+          labelEl.textContent = labels[inputId] || '輸入中...';
+          toolbar.classList.remove('hidden');
+        }
+      }
+
       function attachEvents() {
         // 輸入連動
-        var inputs = ['input-ga-weeks', 'input-ga-days', 'input-mca-pi', 'input-uma-pi', 'input-patient-mrn'];
-        inputs.forEach(function (id) {
+        inputSequence.forEach(function (id) {
           var el = document.getElementById(id);
           if (el) {
             el.addEventListener('input', recalculate);
             el.addEventListener('change', recalculate);
+
+            // 聚焦時彈出工具列
+            el.addEventListener('focus', function () {
+              showKeyboardToolbar(id);
+            });
+
+            // 按鍵盤 Enter 自動跳下一格或收起
+            el.addEventListener('keydown', function (e) {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                moveToNextInput();
+              }
+            });
           }
         });
+
+        // 鍵盤工具列按鈕
+        document.getElementById('btn-kb-done')?.addEventListener('click', function (e) {
+          e.preventDefault();
+          dismissKeyboard();
+        });
+
+        document.getElementById('btn-kb-next')?.addEventListener('click', function (e) {
+          e.preventDefault();
+          moveToNextInput();
+        });
+
+        // 點擊畫面空白處自動收起鍵盤 (Tap Anywhere to Dismiss)
+        document.addEventListener('click', function (e) {
+          if (!e.target.closest('input, select, button, .ios-kb-toolbar')) {
+            dismissKeyboard();
+          }
+        });
+        document.addEventListener('touchstart', function (e) {
+          if (!e.target.closest('input, select, button, .ios-kb-toolbar')) {
+            dismissKeyboard();
+          }
+        }, { passive: true });
 
         // 近期病患選單切換
         document.getElementById('select-recent-patients')?.addEventListener('change', function (e) {
@@ -604,6 +675,7 @@
 
         // 儲存本次量測按鈕
         document.getElementById('btn-save-measurement')?.addEventListener('click', function () {
+          dismissKeyboard();
           var timeStr = updateAutoTime();
           activeMRN = (document.getElementById('input-patient-mrn').value || 'P109823').trim().toUpperCase();
           var updated = DB.save(activeMRN, {
@@ -623,10 +695,14 @@
         });
 
         // 模式切換按鈕
-        document.getElementById('btn-toggle-to-chart')?.addEventListener('click', function() { setMode(true); });
-        document.getElementById('btn-back-to-input')?.addEventListener('click', function() { setMode(false); });
+        document.getElementById('btn-toggle-to-chart')?.addEventListener('click', function() {
+          dismissKeyboard();
+          setMode(true);
+        });
+        document.getElementById('btn-back-to-input')?.addEventListener('click', function() {
+          setMode(false);
+        });
 
-        // 螢幕旋轉自動切換
         window.addEventListener('resize', function () {
           var isLandscape = window.innerWidth > window.innerHeight;
           setMode(isLandscape);
