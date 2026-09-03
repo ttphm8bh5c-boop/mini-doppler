@@ -1,356 +1,301 @@
 /* ==========================================================================
-   iPad-Optimized Ultra-Compact Clinical Stylesheet
-   Vertical 3-Input Column (280px) + Clean CPR Chart (1fr)
-   Zero scroll on iPad and Mac
+   iPhone Native iOS Style Stylesheet
+   Apple iOS Inset Grouped design system for CPR Calculator
    ========================================================================== */
 
 :root {
-  --font-sans: -apple-system, BlinkMacSystemFont, "PingFang TC", "SF Pro Text", "Segoe UI", Roboto, sans-serif;
-  --font-mono: "SF Mono", ui-monospace, Menlo, Monaco, Consolas, monospace;
-
-  --bg-app: #f8fafc;
-  --bg-card: #ffffff;
-  --border-light: #e2e8f0;
-  --border-subtle: #cbd5e1;
-
-  --text-primary: #0f172a;
-  --text-secondary: #334155;
-  --text-muted: #64748b;
-
-  --primary-blue: #2563eb;
-  --primary-blue-hover: #1d4ed8;
-
-  --color-normal: #16a34a;
-  --bg-normal: #f0fdf4;
-  --border-normal: #86efac;
-
-  --color-abnormal: #dc2626;
-  --bg-abnormal: #fef2f2;
-  --border-abnormal: #fca5a5;
-
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 12px;
+  --ios-bg: #f2f2f7;
+  --ios-card-bg: #ffffff;
+  --ios-separator: #e5e5ea;
+  --ios-text-primary: #000000;
+  --ios-text-secondary: #8e8e93;
+  --ios-blue: #007aff;
+  --ios-green: #34c759;
+  --ios-red: #ff3b30;
+  --ios-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang TC", "Helvetica Neue", sans-serif;
+  --ios-mono: "SF Mono", ui-monospace, Menlo, Monaco, monospace;
 }
 
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  -webkit-tap-highlight-color: transparent;
 }
 
 html, body {
   width: 100%;
   height: 100%;
-  overflow: hidden;
-  font-family: var(--font-sans);
-  background-color: var(--bg-app);
-  color: var(--text-primary);
+  background-color: var(--ios-bg);
+  font-family: var(--ios-font);
+  color: var(--ios-text-primary);
   -webkit-font-smoothing: antialiased;
 }
 
-.ipad-shell {
+/* iPhone Wrapper Container (Centered on desktop, fills iPhone 100%) */
+.iphone-container {
   width: 100%;
-  height: 100vh;
+  max-width: 414px; /* Standard iPhone screen width */
+  margin: 0 auto;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  padding: 12px 16px 14px;
-  max-width: 1280px;
-  margin: 0 auto;
+  background-color: var(--ios-bg);
 }
 
-/* Minimal Header */
-.minimal-header {
-  margin-bottom: 10px;
+/* iOS Navigation Bar */
+.ios-nav-bar {
+  padding: 12px 16px 8px;
+  background-color: var(--ios-bg);
   flex-shrink: 0;
 }
 
-.header-title {
-  font-size: 1.1rem;
+.nav-title {
+  font-size: 1.25rem;
   font-weight: 700;
-  color: var(--text-primary);
-  background: #ffffff;
-  padding: 8px 14px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-light);
-  display: inline-block;
+  letter-spacing: -0.02em;
+  color: #1c1c1e;
 }
 
-/* 2-Column Main Workspace */
-.minimal-main {
+/* Stream of iOS Inset Cards */
+.ios-main-content {
   flex: 1;
-  display: grid;
-  grid-template-columns: 280px 1fr;
+  padding: 0 14px 20px;
+  display: flex;
+  flex-direction: column;
   gap: 12px;
-  min-height: 0;
 }
 
-@media (max-width: 768px) {
-  .minimal-main {
-    grid-template-columns: 1fr;
-    overflow-y: auto;
-  }
-  html, body {
-    overflow: auto;
-  }
+/* Inset Card Base */
+.ios-card {
+  background: var(--ios-card-bg);
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
 }
 
-/* Cards */
-.clean-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius-lg);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-}
-
-/* Left Panel: Compact Vertical Inputs & Result */
-.panel-left {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.compact-input-card {
-  padding: 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.input-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.item-label {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-}
-
-/* Gestational Age Inline Input */
-.ga-inline {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.ga-inline input {
-  width: 100%;
-  padding: 6px 4px;
-  font-size: 1rem;
-  font-weight: 700;
-  font-family: var(--font-mono);
-  border: 1.5px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  color: var(--text-primary);
-  background: #ffffff;
-  text-align: center;
-}
-
-.ga-inline input:focus,
-.num-input:focus {
-  outline: none;
-  border-color: var(--primary-blue);
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
-}
-
-.ga-inline .unit {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--text-muted);
-}
-
-.ga-inline .plus {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--text-muted);
-}
-
-/* Single Doppler Inputs */
-.num-input {
-  width: 100%;
-  padding: 7px 10px;
-  font-size: 1.05rem;
-  font-weight: 700;
-  font-family: var(--font-mono);
-  border: 1.5px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  color: var(--text-primary);
-  background: #ffffff;
-}
-
-.calc-btn {
-  width: 100%;
-  padding: 8px 12px;
-  font-size: 0.88rem;
-  font-weight: 700;
-  background: var(--primary-blue);
+/* 1. Top Result Hero Card (iOS Dark Slate) */
+.result-hero-card {
+  background: #1c1c1e;
   color: #ffffff;
-  border: none;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: background 0.15s ease;
-  margin-top: 4px;
+  padding: 14px 16px;
 }
 
-.calc-btn:hover {
-  background: var(--primary-blue-hover);
+.hero-cpr-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 2px;
 }
 
-/* CPR Result Card */
-.result-summary-card {
-  background: #0f172a;
+.hero-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  color: #8e8e93;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.hero-numbers-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.hero-cpr-val {
+  font-size: 2.5rem;
+  font-weight: 800;
+  font-family: var(--ios-mono);
+  line-height: 1.0;
   color: #ffffff;
-  padding: 14px;
 }
 
-.result-row {
+.hero-centile-val {
+  font-size: 1.45rem;
+  font-weight: 700;
+  font-family: var(--ios-mono);
+  color: #30d158; /* iOS Neon Green */
+}
+
+.hero-footer-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.res-sublabel {
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #94a3b8;
-  font-weight: 600;
-  display: block;
-}
-
-.res-main-cpr {
-  font-size: 2.25rem;
-  font-weight: 800;
-  font-family: var(--font-mono);
-  line-height: 1.05;
-  color: #ffffff;
-  margin-top: 2px;
-}
-
-.res-centile-col {
-  text-align: right;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 3px;
-}
-
-.res-centile-num {
-  font-size: 1.25rem;
-  font-weight: 700;
-  font-family: var(--font-mono);
-  color: #ffffff;
-}
-
-.res-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
+.ios-badge {
   font-size: 0.72rem;
   font-weight: 700;
-  padding: 2px 7px;
+  padding: 3px 8px;
   border-radius: 9999px;
-  line-height: 1.2;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .badge-normal {
-  background: var(--bg-normal);
-  color: var(--color-normal);
-  border: 1px solid var(--border-normal);
+  background: rgba(52, 199, 89, 0.15);
+  color: #30d158;
 }
 
 .badge-abnormal {
-  background: var(--bg-abnormal);
-  color: var(--color-abnormal);
-  border: 1px solid var(--border-abnormal);
+  background: rgba(255, 69, 58, 0.18);
+  color: #ff453a;
 }
 
-/* Right Panel: Chart */
-.panel-chart {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
+.hero-hint {
+  font-size: 0.7rem;
+  color: #636366;
 }
 
-.chart-clean-card {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  padding: 10px 14px;
+/* 2. Middle Inputs Card (iOS Inset Grouped List) */
+.inputs-card {
+  padding: 0 14px;
 }
 
-.chart-body-mount {
-  flex: 1;
+.ios-list-row {
   display: flex;
   align-items: center;
-  justify-content: center;
-  min-height: 0;
+  justify-content: space-between;
+  padding: 11px 0;
+  border-bottom: 0.5px solid var(--ios-separator);
+  min-height: 44px; /* iOS HIG minimum touch height */
 }
 
-.cpr-svg-container {
-  width: 100%;
-  height: 100%;
-  max-height: 480px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+.ios-list-row.last-row {
+  border-bottom: none;
 }
 
-.cpr-svg {
-  width: 100%;
-  height: auto;
-  max-height: 440px;
+.row-label {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #000000;
+  flex: 1;
 }
 
-.chart-legend-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  font-size: 0.72rem;
-  color: var(--text-secondary);
-  margin-top: 6px;
-  flex-shrink: 0;
-}
-
-.legend-chip {
+/* Gestational Age Cluster */
+.ga-input-cluster {
   display: flex;
   align-items: center;
   gap: 4px;
 }
 
-.swatch-band {
-  width: 12px;
-  height: 8px;
-  background: #e0f2fe;
-  border: 1px solid #bae6fd;
-  border-radius: 2px;
+.ga-num-input {
+  width: 48px;
+  height: 32px;
+  text-align: center;
+  font-size: 1.05rem;
+  font-weight: 600;
+  font-family: var(--ios-mono);
+  background: #f2f2f7;
+  border: 1px solid var(--ios-separator);
+  border-radius: 7px;
+  color: #000000;
+}
+
+.ga-unit {
+  font-size: 0.8rem;
+  color: var(--ios-text-secondary);
+}
+
+.ga-plus {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--ios-text-secondary);
+  padding: 0 1px;
+}
+
+/* Single Doppler Row Input */
+.row-single-input {
+  width: 96px;
+  height: 32px;
+  text-align: right;
+  padding: 0 8px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  font-family: var(--ios-mono);
+  background: #f2f2f7;
+  border: 1px solid var(--ios-separator);
+  border-radius: 7px;
+  color: #000000;
+}
+
+.ga-num-input:focus,
+.row-single-input:focus {
+  outline: none;
+  background: #ffffff;
+  border-color: var(--ios-blue);
+  box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2);
+}
+
+/* 3. Bottom Chart Card */
+.chart-card {
+  padding: 12px 14px 10px;
+}
+
+.chart-header-row {
+  margin-bottom: 6px;
+}
+
+.chart-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #1c1c1e;
+}
+
+.chart-mount-box {
+  width: 100%;
+}
+
+.ios-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.ios-legend-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-size: 0.7rem;
+  color: var(--ios-text-secondary);
+  margin-top: 6px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .swatch-50 {
-  width: 12px;
-  height: 3px;
-  background: #2563eb;
+  width: 10px;
+  height: 2.5px;
+  background: #007aff;
 }
 
 .swatch-5 {
-  width: 12px;
-  height: 3px;
-  background: #dc2626;
+  width: 10px;
+  height: 2.5px;
+  background: #ff3b30;
 }
 
-.swatch-pt {
-  width: 7px;
-  height: 7px;
+.swatch-dot {
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  background: #dc2626;
   border: 1px solid #ffffff;
-  box-shadow: 0 0 0 1px #dc2626;
 }
 
-.field-warn.hidden {
-  display: none;
+.dot-normal {
+  background: #34c759;
+  box-shadow: 0 0 0 1px #34c759;
+}
+
+.dot-abnormal {
+  background: #ff3b30;
+  box-shadow: 0 0 0 1px #ff3b30;
 }

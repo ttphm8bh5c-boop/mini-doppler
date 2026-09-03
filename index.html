@@ -2,77 +2,78 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>CPR 計算器</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="ipad-shell">
-    <header class="minimal-header">
-      <h1 class="header-title">CPR 計算器</h1>
+  <div class="iphone-container">
+    <!-- iOS Navigation Bar -->
+    <header class="ios-nav-bar">
+      <h1 class="nav-title">CPR 計算器</h1>
     </header>
 
-    <main class="minimal-main">
-      <!-- Left Column: Compact Vertical 3 Inputs & CPR Result -->
-      <section class="panel-left">
-        <!-- 3 Inputs Vertical Card -->
-        <div class="clean-card compact-input-card">
-          <!-- 1. 懷孕週數 -->
-          <div class="input-item">
-            <label class="item-label">懷孕週數</label>
-            <div class="ga-inline">
-              <input type="number" id="input-ga-weeks" value="28" min="20" max="42" step="1" inputmode="numeric" />
-              <span class="unit">週</span>
-              <span class="plus">+</span>
-              <input type="number" id="input-ga-days" value="4" min="0" max="6" step="1" inputmode="numeric" />
-              <span class="unit">天</span>
-            </div>
-          </div>
+    <!-- Main Content Stream (iOS Inset Grouped Style) -->
+    <main class="ios-main-content">
 
-          <!-- 2. MCA PI -->
-          <div class="input-item">
-            <label class="item-label" for="input-mca-pi">MCA PI</label>
-            <input type="number" id="input-mca-pi" value="1.79" step="0.01" min="0.1" max="4.0" inputmode="decimal" class="num-input" />
-          </div>
-
-          <!-- 3. UmA PI -->
-          <div class="input-item">
-            <label class="item-label" for="input-uma-pi">UmA PI</label>
-            <input type="number" id="input-uma-pi" value="0.85" step="0.01" min="0.1" max="4.0" inputmode="decimal" class="num-input" />
-          </div>
-
-          <button type="button" id="btn-calculate" class="calc-btn">計算</button>
+      <!-- 1. 頂部：CPR 結果大卡片 (Result Card) -->
+      <section class="ios-card result-hero-card">
+        <div class="hero-cpr-header">
+          <span class="hero-label">CPR 數值</span>
+          <span class="hero-label">百分位數</span>
         </div>
 
-        <!-- CPR Output Card -->
-        <div class="clean-card result-summary-card">
-          <div class="result-row">
-            <div>
-              <span class="res-sublabel">CPR</span>
-              <div class="res-main-cpr" id="display-cpr-num">2.11</div>
-            </div>
+        <div class="hero-numbers-row">
+          <div class="hero-cpr-val" id="display-cpr-num">2.11</div>
+          <div class="hero-centile-val" id="display-cpr-centile">78.8%</div>
+        </div>
 
-            <div class="res-centile-col">
-              <span class="res-sublabel">百分位數</span>
-              <div class="res-centile-num" id="display-cpr-centile">78.8%</div>
-              <div id="display-cpr-status-badge" class="res-badge badge-normal">
-                ✓ 正常
-              </div>
-            </div>
-          </div>
+        <div class="hero-footer-row">
+          <span id="display-cpr-status-badge" class="ios-badge badge-normal">
+            ✓ 正常
+          </span>
+          <span class="hero-hint">FMF 2019 標準</span>
         </div>
       </section>
 
-      <!-- Right Column: CPR Chart -->
-      <section class="panel-chart">
-        <div class="clean-card chart-clean-card">
-          <div id="chart-mount" class="chart-body-mount"></div>
+      <!-- 2. 中間：3 個單手輸入格 (iOS Inset Grouped List) -->
+      <section class="ios-card inputs-card">
+        <!-- 懷孕週數 -->
+        <div class="ios-list-row">
+          <label class="row-label">懷孕週數</label>
+          <div class="ga-input-cluster">
+            <input type="number" id="input-ga-weeks" value="28" min="20" max="42" step="1" inputmode="numeric" class="ga-num-input" />
+            <span class="ga-unit">週</span>
+            <span class="ga-plus">+</span>
+            <input type="number" id="input-ga-days" value="4" min="0" max="6" step="1" inputmode="numeric" class="ga-num-input" />
+            <span class="ga-unit">天</span>
+          </div>
+        </div>
+
+        <!-- MCA PI -->
+        <div class="ios-list-row">
+          <label class="row-label" for="input-mca-pi">MCA PI</label>
+          <input type="number" id="input-mca-pi" value="1.79" step="0.01" min="0.1" max="4.0" inputmode="decimal" class="row-single-input" placeholder="例如 1.79" />
+        </div>
+
+        <!-- UmA PI -->
+        <div class="ios-list-row last-row">
+          <label class="row-label" for="input-uma-pi">UmA PI</label>
+          <input type="number" id="input-uma-pi" value="0.85" step="0.01" min="0.1" max="4.0" inputmode="decimal" class="row-single-input" placeholder="例如 0.85" />
         </div>
       </section>
+
+      <!-- 3. 底部：CPR 參考曲線圖 (Chart Card) -->
+      <section class="ios-card chart-card">
+        <div class="chart-header-row">
+          <span class="chart-title">CPR 懷孕週數曲線 (20–42 週)</span>
+        </div>
+        <div id="chart-mount" class="chart-mount-box"></div>
+      </section>
+
     </main>
   </div>
 
-  <!-- Pure Standalone Script (No ES Modules to guarantee 100% WKWebView file:// execution) -->
   <script>
     (function () {
       function normalCDF(z) {
@@ -93,9 +94,9 @@
       }
 
       function renderChart(container, patientGA, patientCPR, isAbnormal) {
-        var width = 600;
-        var height = 400;
-        var padding = { top: 20, right: 30, bottom: 40, left: 45 };
+        var width = 350;
+        var height = 210;
+        var padding = { top: 16, right: 18, bottom: 28, left: 36 };
         var plotW = width - padding.left - padding.right;
         var plotH = height - padding.top - padding.bottom;
 
@@ -105,14 +106,14 @@
         var maxY = 3.0;
 
         if (patientCPR !== null && patientCPR > maxY) {
-          maxY = Math.ceil(patientCPR * 1.12 * 10) / 10;
+          maxY = Math.ceil(patientCPR * 1.15 * 10) / 10;
         }
 
         function sx(x) { return padding.left + ((x - minX) / (maxX - minX)) * plotW; }
         function sy(y) { return padding.top + plotH - ((y - minY) / (maxY - minY)) * plotH; }
 
         var points = [];
-        for (var ga = 20.0; ga <= 42.0; ga += 0.5) {
+        for (var ga = 20.0; ga <= 42.0; ga += 1.0) {
           var ref = getFMFCPRReference(ga * 7);
           points.push({ ga: ga, p5: ref.p5, p50: ref.median, p95: ref.p95 });
         }
@@ -126,55 +127,49 @@
         var shadedBand = forward95 + ' ' + backward5 + ' Z';
 
         var gridX = '';
-        for (var w = 20; w <= 42; w += 2) {
+        var weekTicks = [20, 24, 28, 32, 36, 40];
+        for (var i = 0; i < weekTicks.length; i++) {
+          var w = weekTicks[i];
           var x = sx(w);
-          gridX += '<line x1="' + x + '" y1="' + padding.top + '" x2="' + x + '" y2="' + (padding.top + plotH) + '" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="2,2"/>' +
-                   '<text x="' + x + '" y="' + (padding.top + plotH + 16) + '" font-size="11" fill="#64748b" text-anchor="middle">' + w + 'w</text>';
+          gridX += '<line x1="' + x + '" y1="' + padding.top + '" x2="' + x + '" y2="' + (padding.top + plotH) + '" stroke="#e5e5ea" stroke-width="1" stroke-dasharray="2,2"/>' +
+                   '<text x="' + x + '" y="' + (padding.top + plotH + 15) + '" font-size="10" fill="#8e8e93" text-anchor="middle">' + w + 'w</text>';
         }
 
         var gridY = '';
-        for (var yVal = 0.5; yVal <= maxY + 0.001; yVal += 0.5) {
+        var yTicks = [1.0, 2.0];
+        for (var j = 0; j < yTicks.length; j++) {
+          var yVal = yTicks[j];
           var y = sy(yVal);
-          gridY += '<line x1="' + padding.left + '" y1="' + y + '" x2="' + (padding.left + plotW) + '" y2="' + y + '" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="2,2"/>' +
-                   '<text x="' + (padding.left - 8) + '" y="' + (y + 4) + '" font-size="11" fill="#64748b" text-anchor="end">' + yVal.toFixed(1) + '</text>';
+          gridY += '<line x1="' + padding.left + '" y1="' + y + '" x2="' + (padding.left + plotW) + '" y2="' + y + '" stroke="#e5e5ea" stroke-width="1" stroke-dasharray="2,2"/>' +
+                   '<text x="' + (padding.left - 6) + '" y="' + (y + 3) + '" font-size="10" fill="#8e8e93" text-anchor="end">' + yVal.toFixed(1) + '</text>';
         }
 
         var patientMarker = '';
         if (patientGA !== null && patientCPR !== null && patientGA >= minX && patientGA <= maxX) {
           var px = sx(patientGA);
           var py = sy(patientCPR);
-          var markerColor = isAbnormal ? '#dc2626' : '#16a34a';
+          var markerColor = isAbnormal ? '#ff3b30' : '#34c759';
 
           patientMarker = '<line x1="' + px + '" y1="' + padding.top + '" x2="' + px + '" y2="' + (padding.top + plotH) + '" stroke="' + markerColor + '" stroke-width="1.5" stroke-dasharray="3,3" opacity="0.6"/>' +
-                          '<line x1="' + padding.left + '" y1="' + py + '" x2="' + (padding.left + plotW) + '" y2="' + py + '" stroke="' + markerColor + '" stroke-width="1.5" stroke-dasharray="3,3" opacity="0.6"/>' +
-                          '<circle cx="' + px + '" cy="' + py + '" r="9" fill="' + markerColor + '" opacity="0.25"/>' +
-                          '<circle cx="' + px + '" cy="' + py + '" r="5.5" fill="' + markerColor + '" stroke="#ffffff" stroke-width="2"/>' +
-                          '<g transform="translate(' + (px > plotW / 2 + padding.left ? px - 95 : px + 10) + ', ' + (py < 50 ? py + 16 : py - 16) + ')">' +
-                            '<rect width="88" height="24" rx="4" fill="#0f172a" opacity="0.9"/>' +
-                            '<text x="44" y="16" fill="#ffffff" font-size="11" font-weight="700" text-anchor="middle">CPR ' + patientCPR.toFixed(2) + '</text>' +
-                          '</g>';
+                          '<circle cx="' + px + '" cy="' + py + '" r="8" fill="' + markerColor + '" opacity="0.25"/>' +
+                          '<circle cx="' + px + '" cy="' + py + '" r="5" fill="' + markerColor + '" stroke="#ffffff" stroke-width="2"/>';
         }
 
-        container.innerHTML = '<div class="cpr-svg-container">' +
-          '<svg viewBox="0 0 ' + width + ' ' + height + '" class="cpr-svg" preserveAspectRatio="xMidYMid meet">' +
-            '<rect x="' + padding.left + '" y="' + padding.top + '" width="' + plotW + '" height="' + plotH + '" fill="#f8fafc" rx="4"/>' +
+        container.innerHTML = '<svg viewBox="0 0 ' + width + ' ' + height + '" class="ios-svg" preserveAspectRatio="xMidYMid meet">' +
+            '<rect x="' + padding.left + '" y="' + padding.top + '" width="' + plotW + '" height="' + plotH + '" fill="#f9f9fb" rx="4"/>' +
             gridX +
             gridY +
-            '<path d="' + shadedBand + '" fill="#e0f2fe" opacity="0.75"/>' +
-            '<path d="' + path95 + '" fill="none" stroke="#64748b" stroke-width="1.5" stroke-dasharray="4,4"/>' +
-            '<path d="' + path50 + '" fill="none" stroke="#2563eb" stroke-width="2.5"/>' +
-            '<path d="' + path5 + '" fill="none" stroke="#dc2626" stroke-width="2"/>' +
+            '<path d="' + shadedBand + '" fill="#e1f0ff" opacity="0.8"/>' +
+            '<path d="' + path95 + '" fill="none" stroke="#8e8e93" stroke-width="1.5" stroke-dasharray="3,3"/>' +
+            '<path d="' + path50 + '" fill="none" stroke="#007aff" stroke-width="2"/>' +
+            '<path d="' + path5 + '" fill="none" stroke="#ff3b30" stroke-width="1.8"/>' +
             patientMarker +
-            '<text x="' + (padding.left + plotW / 2) + '" y="' + (height - 6) + '" font-size="11" font-weight="600" fill="#475569" text-anchor="middle">週數 (GA)</text>' +
-            '<text transform="rotate(-90)" x="' + (-(padding.top + plotH / 2)) + '" y="14" font-size="11" font-weight="600" fill="#475569" text-anchor="middle">CPR</text>' +
           '</svg>' +
-          '<div class="chart-legend-row">' +
-            '<span class="legend-chip"><span class="swatch-50"></span> 50th</span>' +
-            '<span class="legend-chip"><span class="swatch-5"></span> 5th (&lt; 5th 異常)</span>' +
-            '<span class="legend-chip"><span class="swatch-band"></span> 5th–95th 區間</span>' +
-            (patientCPR !== null ? '<span class="legend-chip"><span class="swatch-pt"></span> 實測點</span>' : '') +
-          '</div>' +
-        '</div>';
+          '<div class="ios-legend-row">' +
+            '<span class="legend-item"><span class="swatch-50"></span> 50th (中位數)</span>' +
+            '<span class="legend-item"><span class="swatch-5"></span> 5th (異常線)</span>' +
+            (patientCPR !== null ? '<span class="legend-item"><span class="swatch-dot ' + (isAbnormal ? 'dot-abnormal' : 'dot-normal') + '"></span> 實測點</span>' : '') +
+          '</div>';
       }
 
       function calculate() {
@@ -208,34 +203,25 @@
 
         var isAbnormal = centile < 5.0;
         if (isAbnormal) {
-          badgeDisplay.className = 'res-badge badge-abnormal';
+          badgeDisplay.className = 'ios-badge badge-abnormal';
           badgeDisplay.textContent = '⚠️ 異常 (< 5%)';
         } else {
-          badgeDisplay.className = 'res-badge badge-normal';
+          badgeDisplay.className = 'ios-badge badge-normal';
           badgeDisplay.textContent = '✓ 正常';
         }
 
         renderChart(chartMount, gaDec, cpr, isAbnormal);
       }
 
-      // Attach event listeners as soon as DOM is loaded
       function attach() {
-        var btn = document.getElementById('btn-calculate');
-        if (btn) btn.addEventListener('click', calculate);
-
         var inputs = ['input-ga-weeks', 'input-ga-days', 'input-mca-pi', 'input-uma-pi'];
         inputs.forEach(function (id) {
           var el = document.getElementById(id);
           if (el) {
             el.addEventListener('input', calculate);
             el.addEventListener('change', calculate);
-            el.addEventListener('keydown', function (e) {
-              if (e.key === 'Enter') calculate();
-            });
           }
         });
-
-        // Run calculation immediately
         calculate();
       }
 

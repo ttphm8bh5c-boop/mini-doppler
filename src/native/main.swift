@@ -8,8 +8,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupMainMenu()
 
-        let windowWidth: CGFloat = 1024
-        let windowHeight: CGFloat = 700
+        let windowWidth: CGFloat = 414
+        let windowHeight: CGFloat = 750
         let screenRect = NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1280, height: 900)
         let windowRect = NSRect(
             x: screenRect.midX - (windowWidth / 2),
@@ -24,8 +24,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             backing: .buffered,
             defer: false
         )
-        window.title = "胎兒多普勒 / 腦胎盤比值 (CPR) 計算器"
-        window.minSize = NSSize(width: 780, height: 540)
+        window.title = "CPR 計算器 (iPhone 樣式)"
+        window.minSize = NSSize(width: 360, height: 600)
         window.center()
         window.delegate = self
 
