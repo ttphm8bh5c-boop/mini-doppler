@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>產科多普勒單元測試儀表板</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang TC", "Microsoft JhengHei", sans-serif;
+      background: #f8fafc;
+      color: #0f172a;
+      padding: 28px 20px;
+      margin: 0;
+    }
+    .test-shell {
+      max-width: 960px;
+      margin: 0 auto;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      overflow: hidden;
+    }
+    .test-header {
+      background: #0f172a;
+      color: #ffffff;
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .header-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+    .header-sub {
+      font-size: 0.8rem;
+      color: #94a3b8;
+    }
+    .back-link {
+      color: #93c5fd;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.85rem;
+    }
+    .back-link:hover { text-decoration: underline; }
+    .summary-card {
+      display: flex;
+      gap: 16px;
+      padding: 18px 24px;
+      background: #f1f5f9;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .metric {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px 16px;
+      flex: 1;
+      text-align: center;
+    }
+    .metric-val {
+      font-size: 1.6rem;
+      font-weight: 800;
+      font-family: monospace;
+    }
+    .metric-val.pass { color: #16a34a; }
+    .metric-val.fail { color: #dc2626; }
+    .metric-lbl {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      color: #64748b;
+      font-weight: 700;
+    }
+    .suite-card {
+      margin: 16px 24px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .suite-header {
+      background: #f8fafc;
+      padding: 10px 16px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+    }
+    .test-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .test-item {
+      padding: 8px 16px;
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .test-item:last-child { border-bottom: none; }
+    .test-item.pass .icon { color: #16a34a; font-weight: bold; }
+    .test-item.fail .icon { color: #dc2626; font-weight: bold; }
+    .test-item.fail { background: #fef2f2; color: #991b1b; }
+    .test-name { flex: 1; }
+    .test-err { font-family: monospace; font-size: 0.75rem; color: #dc2626; }
+  </style>
+</head>
+<body>
+  <div class="test-shell">
+    <div class="test-header">
+      <div>
+        <div class="header-title">產科多普勒臨床單元測試套件 (Test Suite)</div>
+        <div class="header-sub">懷孕週數轉換、CPR 計算、常態分佈百分位數與 ISUOG 規則自動化驗證</div>
+      </div>
+      <a href="index.html" class="back-link">← 返回多普勒計算器</a>
+    </div>
+
+    <div class="summary-card">
+      <div class="metric">
+        <div id="m-total" class="metric-val">—</div>
+        <div class="metric-lbl">測試總數</div>
+      </div>
+      <div class="metric">
+        <div id="m-pass" class="metric-val pass">—</div>
+        <div class="metric-lbl">通過數量</div>
+      </div>
+      <div class="metric">
+        <div id="m-fail" class="metric-val fail">—</div>
+        <div class="metric-lbl">失敗數量</div>
+      </div>
+      <div class="metric">
+        <div id="m-time" class="metric-val">—</div>
+        <div class="metric-lbl">執行時間</div>
+      </div>
+    </div>
+
+    <div id="suites-container"></div>
+  </div>
+
+  <script type="module">
+    import { runTests } from './src/tests/clinical.test.js';
+
+    const startTime = performance.now();
+    const suites = {};
+    let totalPass = 0;
+    let totalFail = 0;
+
+    const harness = {
+      currentSuite: '預設測試組',
+      describe(name, fn) {
+        this.currentSuite = name;
+        if (!suites[name]) suites[name] = [];
+        try {
+          fn();
+        } catch (err) {
+          totalFail++;
+          suites[name].push({ name: '測試組執行例外錯誤', ok: false, error: err.message });
+        }
+      },
+      equal(actual, expected, message) {
+        const ok = actual === expected;
+        if (ok) totalPass++; else totalFail++;
+        suites[this.currentSuite].push({
+          name: message,
+          ok,
+          error: ok ? null : `預期為 ${expected}，實際得到 ${actual}`
+        });
+      },
+      closeTo(actual, expected, delta, message) {
+        const diff = Math.abs(actual - expected);
+        const ok = diff <= delta;
+        if (ok) totalPass++; else totalFail++;
+        suites[this.currentSuite].push({
+          name: message,
+          ok,
+          error: ok ? null : `預期為 ${expected} (±${delta})，實際得到 ${actual} (差距: ${diff})`
+        });
+      },
+      isTrue(val, message) {
+        this.equal(Boolean(val), true, message);
+      },
+      isFalse(val, message) {
+        this.equal(Boolean(val), false, message);
+      },
+      throws(fn, errorType, message) {
+        let threw = false;
+        let thrownErr = null;
+        try {
+          fn();
+        } catch (err) {
+          threw = true;
+          thrownErr = err;
+        }
+        const ok = threw && (!errorType || thrownErr instanceof errorType);
+        if (ok) totalPass++; else totalFail++;
+        suites[this.currentSuite].push({
+          name: message,
+          ok,
+          error: ok ? null : (threw ? `錯誤型別不符：${thrownErr?.name}` : '未如預期拋出例外錯誤')
+        });
+      }
+    };
+
+    runTests(harness);
+    const duration = (performance.now() - startTime).toFixed(1);
+
+    document.getElementById('m-total').textContent = totalPass + totalFail;
+    document.getElementById('m-pass').textContent = totalPass;
+    document.getElementById('m-fail').textContent = totalFail;
+    document.getElementById('m-time').textContent = `${duration} 毫秒`;
+
+    const container = document.getElementById('suites-container');
+    container.innerHTML = Object.entries(suites).map(([suiteName, tests]) => {
+      const suitePass = tests.filter(t => t.ok).length;
+      const suiteTotal = tests.length;
+      return `
+        <div class="suite-card">
+          <div class="suite-header">
+            <span>${suiteName}</span>
+            <span>通過 ${suitePass} / ${suiteTotal} 項</span>
+          </div>
+          <ul class="test-list">
+            ${tests.map(t => `
+              <li class="test-item ${t.ok ? 'pass' : 'fail'}">
+                <span class="icon">${t.ok ? '✓' : '✗'}</span>
+                <span class="test-name">${t.name}</span>
+                ${t.error ? `<span class="test-err">${t.error}</span>` : ''}
+              </li>
+            `).join('')}
+          </ul>
+        </div>
+      `;
+    }).join('');
+  </script>
+</body>
+</html>

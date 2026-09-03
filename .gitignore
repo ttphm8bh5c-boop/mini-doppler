@@ -1,0 +1,7 @@
+.DS_Store
+scratch/
+AppIcon.iconset/
+FetalDopplerBin
+Fetal Doppler.app/
+*.pyc
+__pycache__/

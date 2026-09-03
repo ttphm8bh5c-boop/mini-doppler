@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>CPR 計算器</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="ipad-shell">
+    <header class="minimal-header">
+      <h1 class="header-title">CPR 計算器</h1>
+    </header>
+
+    <main class="minimal-main">
+      <!-- Left Column: Compact Vertical 3 Inputs & CPR Result -->
+      <section class="panel-left">
+        <!-- 3 Inputs Vertical Card -->
+        <div class="clean-card compact-input-card">
+          <!-- 1. 懷孕週數 -->
+          <div class="input-item">
+            <label class="item-label">懷孕週數</label>
+            <div class="ga-inline">
+              <input type="number" id="input-ga-weeks" value="28" min="20" max="42" step="1" inputmode="numeric" />
+              <span class="unit">週</span>
+              <span class="plus">+</span>
+              <input type="number" id="input-ga-days" value="4" min="0" max="6" step="1" inputmode="numeric" />
+              <span class="unit">天</span>
+            </div>
+          </div>
+
+          <!-- 2. MCA PI -->
+          <div class="input-item">
+            <label class="item-label" for="input-mca-pi">MCA PI</label>
+            <input type="number" id="input-mca-pi" value="1.79" step="0.01" min="0.1" max="4.0" inputmode="decimal" class="num-input" />
+          </div>
+
+          <!-- 3. UmA PI -->
+          <div class="input-item">
+            <label class="item-label" for="input-uma-pi">UmA PI</label>
+            <input type="number" id="input-uma-pi" value="0.85" step="0.01" min="0.1" max="4.0" inputmode="decimal" class="num-input" />
+          </div>
+
+          <button type="button" id="btn-calculate" class="calc-btn">計算</button>
+        </div>
+
+        <!-- CPR Output Card -->
+        <div class="clean-card result-summary-card">
+          <div class="result-row">
+            <div>
+              <span class="res-sublabel">CPR</span>
+              <div class="res-main-cpr" id="display-cpr-num">2.11</div>
+            </div>
+
+            <div class="res-centile-col">
+              <span class="res-sublabel">百分位數</span>
+              <div class="res-centile-num" id="display-cpr-centile">78.8%</div>
+              <div id="display-cpr-status-badge" class="res-badge badge-normal">
+                ✓ 正常
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Column: CPR Chart -->
+      <section class="panel-chart">
+        <div class="clean-card chart-clean-card">
+          <div id="chart-mount" class="chart-body-mount"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Pure Standalone Script (No ES Modules to guarantee 100% WKWebView file:// execution) -->
+  <script>
+    (function () {
+      function normalCDF(z) {
+        var t = 1.0 / (1.0 + 0.3275911 * Math.abs(z));
+        var poly = ((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t;
+        var erf = (z >= 0 ? 1 : -1) * (1.0 - poly * Math.exp(-z * z));
+        return 0.5 * (1.0 + erf);
+      }
+
+      function getFMFCPRReference(gaDays) {
+        var logMedian = -0.1820 + (0.00392 * gaDays) - (0.00000854 * gaDays * gaDays);
+        var median = Math.pow(10, logMedian);
+        var sd = 0.0952 - (0.000251 * gaDays) + (0.00000085 * gaDays * gaDays);
+        var z90 = 1.644853;
+        var p5 = Math.pow(10, logMedian - (z90 * sd));
+        var p95 = Math.pow(10, logMedian + (z90 * sd));
+        return { median: median, sd: sd, p5: p5, p95: p95, logMedian: logMedian };
+      }
+
+      function renderChart(container, patientGA, patientCPR, isAbnormal) {
+        var width = 600;
+        var height = 400;
+        var padding = { top: 20, right: 30, bottom: 40, left: 45 };
+        var plotW = width - padding.left - padding.right;
+        var plotH = height - padding.top - padding.bottom;
+
+        var minX = 20;
+        var maxX = 42;
+        var minY = 0.4;
+        var maxY = 3.0;
+
+        if (patientCPR !== null && patientCPR > maxY) {
+          maxY = Math.ceil(patientCPR * 1.12 * 10) / 10;
+        }
+
+        function sx(x) { return padding.left + ((x - minX) / (maxX - minX)) * plotW; }
+        function sy(y) { return padding.top + plotH - ((y - minY) / (maxY - minY)) * plotH; }
+
+        var points = [];
+        for (var ga = 20.0; ga <= 42.0; ga += 0.5) {
+          var ref = getFMFCPRReference(ga * 7);
+          points.push({ ga: ga, p5: ref.p5, p50: ref.median, p95: ref.p95 });
+        }
+
+        var path50 = points.map(function (d, i) { return (i === 0 ? 'M' : 'L') + ' ' + sx(d.ga).toFixed(1) + ' ' + sy(d.p50).toFixed(1); }).join(' ');
+        var path95 = points.map(function (d, i) { return (i === 0 ? 'M' : 'L') + ' ' + sx(d.ga).toFixed(1) + ' ' + sy(d.p95).toFixed(1); }).join(' ');
+        var path5 = points.map(function (d, i) { return (i === 0 ? 'M' : 'L') + ' ' + sx(d.ga).toFixed(1) + ' ' + sy(d.p5).toFixed(1); }).join(' ');
+
+        var forward95 = path95;
+        var backward5 = points.slice().reverse().map(function (d) { return 'L ' + sx(d.ga).toFixed(1) + ' ' + sy(d.p5).toFixed(1); }).join(' ');
+        var shadedBand = forward95 + ' ' + backward5 + ' Z';
+
+        var gridX = '';
+        for (var w = 20; w <= 42; w += 2) {
+          var x = sx(w);
+          gridX += '<line x1="' + x + '" y1="' + padding.top + '" x2="' + x + '" y2="' + (padding.top + plotH) + '" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="2,2"/>' +
+                   '<text x="' + x + '" y="' + (padding.top + plotH + 16) + '" font-size="11" fill="#64748b" text-anchor="middle">' + w + 'w</text>';
+        }
+
+        var gridY = '';
+        for (var yVal = 0.5; yVal <= maxY + 0.001; yVal += 0.5) {
+          var y = sy(yVal);
+          gridY += '<line x1="' + padding.left + '" y1="' + y + '" x2="' + (padding.left + plotW) + '" y2="' + y + '" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="2,2"/>' +
+                   '<text x="' + (padding.left - 8) + '" y="' + (y + 4) + '" font-size="11" fill="#64748b" text-anchor="end">' + yVal.toFixed(1) + '</text>';
+        }
+
+        var patientMarker = '';
+        if (patientGA !== null && patientCPR !== null && patientGA >= minX && patientGA <= maxX) {
+          var px = sx(patientGA);
+          var py = sy(patientCPR);
+          var markerColor = isAbnormal ? '#dc2626' : '#16a34a';
+
+          patientMarker = '<line x1="' + px + '" y1="' + padding.top + '" x2="' + px + '" y2="' + (padding.top + plotH) + '" stroke="' + markerColor + '" stroke-width="1.5" stroke-dasharray="3,3" opacity="0.6"/>' +
+                          '<line x1="' + padding.left + '" y1="' + py + '" x2="' + (padding.left + plotW) + '" y2="' + py + '" stroke="' + markerColor + '" stroke-width="1.5" stroke-dasharray="3,3" opacity="0.6"/>' +
+                          '<circle cx="' + px + '" cy="' + py + '" r="9" fill="' + markerColor + '" opacity="0.25"/>' +
+                          '<circle cx="' + px + '" cy="' + py + '" r="5.5" fill="' + markerColor + '" stroke="#ffffff" stroke-width="2"/>' +
+                          '<g transform="translate(' + (px > plotW / 2 + padding.left ? px - 95 : px + 10) + ', ' + (py < 50 ? py + 16 : py - 16) + ')">' +
+                            '<rect width="88" height="24" rx="4" fill="#0f172a" opacity="0.9"/>' +
+                            '<text x="44" y="16" fill="#ffffff" font-size="11" font-weight="700" text-anchor="middle">CPR ' + patientCPR.toFixed(2) + '</text>' +
+                          '</g>';
+        }
+
+        container.innerHTML = '<div class="cpr-svg-container">' +
+          '<svg viewBox="0 0 ' + width + ' ' + height + '" class="cpr-svg" preserveAspectRatio="xMidYMid meet">' +
+            '<rect x="' + padding.left + '" y="' + padding.top + '" width="' + plotW + '" height="' + plotH + '" fill="#f8fafc" rx="4"/>' +
+            gridX +
+            gridY +
+            '<path d="' + shadedBand + '" fill="#e0f2fe" opacity="0.75"/>' +
+            '<path d="' + path95 + '" fill="none" stroke="#64748b" stroke-width="1.5" stroke-dasharray="4,4"/>' +
+            '<path d="' + path50 + '" fill="none" stroke="#2563eb" stroke-width="2.5"/>' +
+            '<path d="' + path5 + '" fill="none" stroke="#dc2626" stroke-width="2"/>' +
+            patientMarker +
+            '<text x="' + (padding.left + plotW / 2) + '" y="' + (height - 6) + '" font-size="11" font-weight="600" fill="#475569" text-anchor="middle">週數 (GA)</text>' +
+            '<text transform="rotate(-90)" x="' + (-(padding.top + plotH / 2)) + '" y="14" font-size="11" font-weight="600" fill="#475569" text-anchor="middle">CPR</text>' +
+          '</svg>' +
+          '<div class="chart-legend-row">' +
+            '<span class="legend-chip"><span class="swatch-50"></span> 50th</span>' +
+            '<span class="legend-chip"><span class="swatch-5"></span> 5th (&lt; 5th 異常)</span>' +
+            '<span class="legend-chip"><span class="swatch-band"></span> 5th–95th 區間</span>' +
+            (patientCPR !== null ? '<span class="legend-chip"><span class="swatch-pt"></span> 實測點</span>' : '') +
+          '</div>' +
+        '</div>';
+      }
+
+      function calculate() {
+        var w = parseInt(document.getElementById('input-ga-weeks').value, 10);
+        var d = parseInt(document.getElementById('input-ga-days').value, 10);
+        var mca = parseFloat(document.getElementById('input-mca-pi').value);
+        var uma = parseFloat(document.getElementById('input-uma-pi').value);
+
+        var cprDisplay = document.getElementById('display-cpr-num');
+        var centileDisplay = document.getElementById('display-cpr-centile');
+        var badgeDisplay = document.getElementById('display-cpr-status-badge');
+        var chartMount = document.getElementById('chart-mount');
+
+        if (isNaN(w) || w < 20 || w > 42) w = 28;
+        if (isNaN(d) || d < 0 || d > 6) d = 0;
+        if (isNaN(mca) || mca <= 0) mca = 1.0;
+        if (isNaN(uma) || uma <= 0) uma = 1.0;
+
+        var gaDays = (w * 7) + d;
+        var gaDec = w + (d / 7);
+        var cpr = mca / uma;
+
+        cprDisplay.textContent = cpr.toFixed(2);
+
+        var ref = getFMFCPRReference(gaDays);
+        var z = (Math.log10(cpr) - ref.logMedian) / ref.sd;
+        var centile = normalCDF(z) * 100.0;
+
+        var pText = centile < 1.0 ? '< 1%' : (centile > 99.0 ? '> 99%' : centile.toFixed(1) + '%');
+        centileDisplay.textContent = pText;
+
+        var isAbnormal = centile < 5.0;
+        if (isAbnormal) {
+          badgeDisplay.className = 'res-badge badge-abnormal';
+          badgeDisplay.textContent = '⚠️ 異常 (< 5%)';
+        } else {
+          badgeDisplay.className = 'res-badge badge-normal';
+          badgeDisplay.textContent = '✓ 正常';
+        }
+
+        renderChart(chartMount, gaDec, cpr, isAbnormal);
+      }
+
+      // Attach event listeners as soon as DOM is loaded
+      function attach() {
+        var btn = document.getElementById('btn-calculate');
+        if (btn) btn.addEventListener('click', calculate);
+
+        var inputs = ['input-ga-weeks', 'input-ga-days', 'input-mca-pi', 'input-uma-pi'];
+        inputs.forEach(function (id) {
+          var el = document.getElementById(id);
+          if (el) {
+            el.addEventListener('input', calculate);
+            el.addEventListener('change', calculate);
+            el.addEventListener('keydown', function (e) {
+              if (e.key === 'Enter') calculate();
+            });
+          }
+        });
+
+        // Run calculation immediately
+        calculate();
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', attach);
+      } else {
+        attach();
+      }
+    })();
+  </script>
+</body>
+</html>
