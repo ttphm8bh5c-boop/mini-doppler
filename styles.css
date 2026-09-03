@@ -235,12 +235,47 @@ body.mode-landscape .landscape-view {
   color: var(--ios-text-secondary);
   border-top: 0.5px solid var(--ios-separator);
   padding-top: 6px;
+  gap: 8px;
 }
 
-.time-value {
-  font-family: var(--ios-mono);
+.time-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.time-input {
+  width: 140px;
+  height: 28px;
+  padding: 0 8px;
+  font-size: 0.8rem;
   font-weight: 600;
-  color: #334155;
+  font-family: var(--ios-mono);
+  background: #f8fafc;
+  border: 1px solid var(--ios-separator);
+  border-radius: 6px;
+  color: #0f172a;
+}
+
+.time-input:focus {
+  outline: none;
+  background: #ffffff;
+  border-color: var(--ios-blue);
+}
+
+.btn-time-now {
+  background: #e2e8f0;
+  border: none;
+  color: #0f172a;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.btn-time-now:hover {
+  background: #cbd5e1;
 }
 
 /* 2. CPR 結果大卡片 */

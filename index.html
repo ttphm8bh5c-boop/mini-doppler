@@ -45,8 +45,11 @@
         </div>
 
         <div class="patient-time-row">
-          <span class="time-label">量測時間（自動鍵入）：</span>
-          <span id="display-auto-time" class="time-value">2026-09-03 08:52</span>
+          <label class="time-label" for="input-measurement-time">量測時間：</label>
+          <div class="time-input-wrap">
+            <input type="text" id="input-measurement-time" value="" placeholder="YYYY-MM-DD HH:mm" class="time-input" />
+            <button type="button" id="btn-now-time" class="btn-time-now" title="填入當前時間">⏰ 現在</button>
+          </div>
         </div>
       </section>
 
@@ -264,16 +267,18 @@
 
       var activeMRN = '';
 
-      function updateAutoTime() {
+      function updateAutoTime(force) {
         var now = new Date();
         var str = now.getFullYear() + '-' +
           String(now.getMonth() + 1).padStart(2, '0') + '-' +
           String(now.getDate()).padStart(2, '0') + ' ' +
           String(now.getHours()).padStart(2, '0') + ':' +
           String(now.getMinutes()).padStart(2, '0');
-        var el = document.getElementById('display-auto-time');
-        if (el) el.textContent = str;
-        return str;
+        var el = document.getElementById('input-measurement-time');
+        if (el && (force || !el.value)) {
+          el.value = str;
+        }
+        return el ? el.value : str;
       }
 
       function recalculate() {
@@ -462,6 +467,9 @@
           document.getElementById('input-ga-days').value = latest.days;
           document.getElementById('input-mca-pi').value = latest.mcaPI;
           document.getElementById('input-uma-pi').value = latest.umaPI;
+          if (latest.timestamp) {
+            document.getElementById('input-measurement-time').value = latest.timestamp;
+          }
         }
         recalculate();
       }
@@ -475,6 +483,7 @@
         document.getElementById('input-ga-days').value = 0;
         document.getElementById('input-mca-pi').value = 1.75;
         document.getElementById('input-uma-pi').value = 0.85;
+        updateAutoTime(true);
         recalculate();
         document.getElementById('input-patient-mrn').focus();
       }
@@ -779,7 +788,7 @@
             if (mrnField) mrnField.value = enteredMRN;
           }
 
-          var timeStr = updateAutoTime();
+          var timeStr = (document.getElementById('input-measurement-time')?.value || '').trim() || updateAutoTime(true);
           var updated = DB.save(enteredMRN, {
             weeks: currentCalc.weeks,
             days: currentCalc.days,
@@ -810,7 +819,11 @@
           setMode(isLandscape);
         });
 
-        updateAutoTime();
+        document.getElementById('btn-now-time')?.addEventListener('click', function () {
+          updateAutoTime(true);
+        });
+
+        updateAutoTime(true);
         recalculate();
       }
 
