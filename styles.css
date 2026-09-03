@@ -228,6 +228,22 @@ body.mode-landscape .landscape-view {
   background: #cbd5e1;
 }
 
+.btn-calc-ga-action {
+  background: var(--ios-blue);
+  color: #ffffff;
+  border: none;
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 6px 10px;
+  border-radius: 7px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-calc-ga-action:hover {
+  background: #0062cc;
+}
+
 .patient-switch-row {
   display: flex;
   width: 100%;

@@ -43,7 +43,8 @@
         <div class="patient-row">
           <label class="patient-label" for="input-patient-edd">預產期 (EDD)</label>
           <div class="patient-input-wrap">
-            <input type="date" id="input-patient-edd" class="edd-input" />
+            <input type="text" id="input-patient-edd" placeholder="例如 2026-11-20" class="edd-input" autocomplete="off" />
+            <button type="button" id="btn-calc-ga" class="btn-calc-ga-action" title="由預產期立即換算週數">⚡ 換算週數</button>
           </div>
         </div>
 
@@ -276,9 +277,24 @@
       // =========================================================================
       function parseDateParts(dateStr) {
         if (!dateStr) return null;
-        var m = dateStr.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
-        if (!m) return null;
-        return new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10), 12, 0, 0);
+        var s = String(dateStr).trim();
+        if (!s) return null;
+        // 1. 純 8 碼數字 YYYYMMDD (例如 20261120)
+        var m8 = s.match(/^(\d{4})(\d{2})(\d{2})/);
+        if (m8) {
+          return new Date(parseInt(m8[1], 10), parseInt(m8[2], 10) - 1, parseInt(m8[3], 10), 12, 0, 0);
+        }
+        // 2. 常見分隔符號 YYYY[-/. ]MM[-/. ]DD (例如 2026-11-20, 2026/11/20, 2026.11.20)
+        var m = s.match(/^(\d{4})[-/.\s](\d{1,2})[-/.\s](\d{1,2})/);
+        if (m) {
+          return new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10), 12, 0, 0);
+        }
+        // 3. 嘗試原生解析
+        var d = new Date(s);
+        if (!isNaN(d.getTime())) {
+          return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12, 0, 0);
+        }
+        return null;
       }
 
       function syncGAFromEDD() {
@@ -286,7 +302,7 @@
         var timeInput = document.getElementById('input-measurement-time');
         var badge = document.getElementById('ga-auto-badge');
 
-        if (!eddInput || !eddInput.value) {
+        if (!eddInput || !eddInput.value || !eddInput.value.trim()) {
           if (badge) badge.classList.add('hidden');
           return false;
         }
@@ -294,7 +310,10 @@
         var eddDate = parseDateParts(eddInput.value);
         var measureDate = parseDateParts(timeInput ? timeInput.value : '');
         if (!eddDate || !measureDate) {
-          if (badge) badge.classList.add('hidden');
+          if (badge) {
+            badge.textContent = '⚠️ 請輸入正確日期格式 (例如 2026-11-20)';
+            badge.classList.remove('hidden');
+          }
           return false;
         }
 
@@ -315,10 +334,43 @@
           }
           return true;
         } else if (badge) {
-          badge.textContent = gaDays < 140 ? '⚠️ 未滿 20 週' : '⚠️ 超過 42 週';
+          var wApprox = Math.floor(gaDays / 7);
+          badge.textContent = gaDays < 140 ? ('⚠️ 推算未滿 20 週 (' + wApprox + 'w)') : ('⚠️ 推算超過 42 週 (' + wApprox + 'w)');
           badge.classList.remove('hidden');
         }
         return false;
+      }
+
+      function syncEDDFromGA() {
+        var wInput = document.getElementById('input-ga-weeks');
+        var dInput = document.getElementById('input-ga-days');
+        var timeInput = document.getElementById('input-measurement-time');
+        var eddInput = document.getElementById('input-patient-edd');
+        var badge = document.getElementById('ga-auto-badge');
+
+        var w = parseInt(wInput ? wInput.value : 0, 10);
+        var d = parseInt(dInput ? dInput.value : 0, 10);
+        if (isNaN(w) || w < 10) return;
+        if (isNaN(d)) d = 0;
+
+        var measureDate = parseDateParts(timeInput ? timeInput.value : '');
+        if (!measureDate) return;
+
+        var gaDays = (w * 7) + d;
+        var remDays = 280 - gaDays;
+        var eddTime = measureDate.getTime() + (remDays * 24 * 60 * 60 * 1000);
+        var eddDate = new Date(eddTime);
+
+        var y = eddDate.getFullYear();
+        var m = String(eddDate.getMonth() + 1).padStart(2, '0');
+        var day = String(eddDate.getDate()).padStart(2, '0');
+        var eddStr = y + '-' + m + '-' + day;
+
+        if (eddInput) eddInput.value = eddStr;
+        if (badge) {
+          badge.textContent = '⚡ 依 ' + w + '+' + d + 'w 反推預產期 ' + eddStr;
+          badge.classList.remove('hidden');
+        }
       }
 
       var currentCalc = {
@@ -890,10 +942,15 @@
             recalculate();
           }
         }
+        document.getElementById('btn-calc-ga')?.addEventListener('click', function() {
+          handleDateSync();
+        });
         document.getElementById('input-patient-edd')?.addEventListener('change', handleDateSync);
         document.getElementById('input-patient-edd')?.addEventListener('input', handleDateSync);
+        document.getElementById('input-patient-edd')?.addEventListener('keyup', handleDateSync);
         document.getElementById('input-measurement-time')?.addEventListener('change', handleDateSync);
         document.getElementById('input-measurement-time')?.addEventListener('input', handleDateSync);
+        document.getElementById('input-measurement-time')?.addEventListener('keyup', handleDateSync);
 
         document.getElementById('btn-toggle-to-chart')?.addEventListener('click', function() {
           dismissKeyboard();
