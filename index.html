@@ -196,6 +196,8 @@
           var key = mrn.trim().toUpperCase();
           var p = all[key];
           if (!p || !p.records) return [];
+          return p.records.slice().sort(function (a, b) { return a.gaDecimal - b.gaDecimal; });
+        },
         getPatient: function (mrn) {
           if (!mrn) return null;
           var all = this.getAll();
