@@ -27,6 +27,7 @@
 
     <main class="portrait-body">
       <!-- 1. 病歷號管理與切換卡片 (嚴格獨立病歷檔案) -->
+      <!-- 1. 病歷號管理與預產期 (Patient Profile Card) -->
       <section class="ios-card patient-card">
         <div class="patient-row">
           <label class="patient-label" for="input-patient-mrn">病歷號</label>
@@ -35,6 +36,14 @@
             <button type="button" id="btn-new-patient" class="btn-new-patient-action" title="建立新病患 / 清空欄位">
               ➕ 新病人
             </button>
+          </div>
+        </div>
+
+        <!-- 預產期 (EDD / EDC) -->
+        <div class="patient-row">
+          <label class="patient-label" for="input-patient-edd">預產期 (EDD)</label>
+          <div class="patient-input-wrap">
+            <input type="date" id="input-patient-edd" class="edd-input" />
           </div>
         </div>
 
@@ -80,7 +89,10 @@
       <section class="ios-card inputs-card">
         <!-- 懷孕週數 -->
         <div class="ios-list-row">
-          <label class="row-label">懷孕週數</label>
+          <div class="ga-label-wrap">
+            <label class="row-label">懷孕週數</label>
+            <span id="ga-auto-badge" class="ga-auto-badge hidden">由預產期推算</span>
+          </div>
           <div class="ga-input-cluster">
             <input type="number" id="input-ga-weeks" value="28" min="20" max="42" step="1" inputmode="numeric" class="ga-num-input" />
             <span class="ga-unit">週</span>
@@ -183,15 +195,19 @@
           var key = mrn.trim().toUpperCase();
           var p = all[key];
           if (!p || !p.records) return [];
-          return p.records.slice().sort(function (a, b) { return a.gaDecimal - b.gaDecimal; });
+        getPatient: function (mrn) {
+          if (!mrn) return null;
+          var all = this.getAll();
+          return all[mrn.trim().toUpperCase()] || null;
         },
-        save: function (mrn, entry) {
+        save: function (mrn, entry, edd) {
           if (!mrn || !mrn.trim()) return [];
           var key = mrn.trim().toUpperCase();
           var all = this.getAll();
           if (!all[key]) {
-            all[key] = { mrn: key, createdAt: new Date().toISOString(), records: [] };
+            all[key] = { mrn: key, createdAt: new Date().toISOString(), edd: edd || '', records: [] };
           }
+          if (edd) all[key].edd = edd;
           all[key].lastUpdated = new Date().toISOString();
 
           var now = new Date();
@@ -252,6 +268,57 @@
         var p5 = Math.pow(10, logMedian - (z90 * sd));
         var p95 = Math.pow(10, logMedian + (z90 * sd));
         return { median: median, sd: sd, p5: p5, p95: p95, logMedian: logMedian };
+      }
+
+      // =========================================================================
+      // 預產期 (EDD) 自動換算懷孕週數 (Gestational Age Dating)
+      // 公式：以預產期當天為 40週+0天 (280天)，推算量測當日的確切週數與天數
+      // =========================================================================
+      function parseDateParts(dateStr) {
+        if (!dateStr) return null;
+        var m = dateStr.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+        if (!m) return null;
+        return new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10), 12, 0, 0);
+      }
+
+      function syncGAFromEDD() {
+        var eddInput = document.getElementById('input-patient-edd');
+        var timeInput = document.getElementById('input-measurement-time');
+        var badge = document.getElementById('ga-auto-badge');
+
+        if (!eddInput || !eddInput.value) {
+          if (badge) badge.classList.add('hidden');
+          return false;
+        }
+
+        var eddDate = parseDateParts(eddInput.value);
+        var measureDate = parseDateParts(timeInput ? timeInput.value : '');
+        if (!eddDate || !measureDate) {
+          if (badge) badge.classList.add('hidden');
+          return false;
+        }
+
+        var msPerDay = 24 * 60 * 60 * 1000;
+        var diffDays = Math.round((eddDate.getTime() - measureDate.getTime()) / msPerDay);
+        var gaDays = 280 - diffDays;
+
+        if (gaDays >= 140 && gaDays <= 294) { // 20w ~ 42w
+          var weeks = Math.floor(gaDays / 7);
+          var days = gaDays % 7;
+          var wInput = document.getElementById('input-ga-weeks');
+          var dInput = document.getElementById('input-ga-days');
+          if (wInput) wInput.value = weeks;
+          if (dInput) dInput.value = days;
+          if (badge) {
+            badge.textContent = '⚡ 由預產期推算 (' + weeks + '+' + days + 'w)';
+            badge.classList.remove('hidden');
+          }
+          return true;
+        } else if (badge) {
+          badge.textContent = gaDays < 140 ? '⚠️ 未滿 20 週' : '⚠️ 超過 42 週';
+          badge.classList.remove('hidden');
+        }
+        return false;
       }
 
       var currentCalc = {
@@ -459,6 +526,13 @@
         activeMRN = mrn.trim().toUpperCase();
         document.getElementById('input-patient-mrn').value = activeMRN;
 
+        var p = DB.getPatient(activeMRN);
+        if (p && p.edd) {
+          document.getElementById('input-patient-edd').value = p.edd;
+        } else {
+          document.getElementById('input-patient-edd').value = '';
+        }
+
         var records = DB.getRecords(activeMRN);
         if (records.length > 0) {
           // 載入該病患的最新一次紀錄填入輸入框！
@@ -471,11 +545,13 @@
             document.getElementById('input-measurement-time').value = latest.timestamp;
           }
         }
+        syncGAFromEDD();
         recalculate();
       }
 
       function startNewPatient() {
         document.getElementById('input-patient-mrn').value = '';
+        document.getElementById('input-patient-edd').value = '';
         document.getElementById('select-recent-patients').value = '';
         activeMRN = '';
         // 重置為乾淨初始值
@@ -483,6 +559,8 @@
         document.getElementById('input-ga-days').value = 0;
         document.getElementById('input-mca-pi').value = 1.75;
         document.getElementById('input-uma-pi').value = 0.85;
+        var badge = document.getElementById('ga-auto-badge');
+        if (badge) badge.classList.add('hidden');
         updateAutoTime(true);
         recalculate();
         document.getElementById('input-patient-mrn').focus();
@@ -788,6 +866,7 @@
             if (mrnField) mrnField.value = enteredMRN;
           }
 
+          var eddVal = (document.getElementById('input-patient-edd')?.value || '').trim();
           var timeStr = (document.getElementById('input-measurement-time')?.value || '').trim() || updateAutoTime(true);
           var updated = DB.save(enteredMRN, {
             weeks: currentCalc.weeks,
@@ -799,12 +878,22 @@
             centile: currentCalc.centile,
             isAbnormal: currentCalc.isAbnormal,
             timestamp: timeStr
-          });
+          }, eddVal);
 
           alert('✓ 已成功儲存至病歷號 [' + enteredMRN + ']！\n該病患當前累積 ' + updated.length + ' 次追蹤測量。');
           recalculate();
           renderLandscapeChart();
         });
+
+        function handleDateSync() {
+          if (syncGAFromEDD()) {
+            recalculate();
+          }
+        }
+        document.getElementById('input-patient-edd')?.addEventListener('change', handleDateSync);
+        document.getElementById('input-patient-edd')?.addEventListener('input', handleDateSync);
+        document.getElementById('input-measurement-time')?.addEventListener('change', handleDateSync);
+        document.getElementById('input-measurement-time')?.addEventListener('input', handleDateSync);
 
         document.getElementById('btn-toggle-to-chart')?.addEventListener('click', function() {
           dismissKeyboard();
@@ -821,9 +910,11 @@
 
         document.getElementById('btn-now-time')?.addEventListener('click', function () {
           updateAutoTime(true);
+          handleDateSync();
         });
 
         updateAutoTime(true);
+        syncGAFromEDD();
         recalculate();
       }
 

@@ -193,6 +193,25 @@ body.mode-landscape .landscape-view {
   text-transform: uppercase;
 }
 
+.edd-input {
+  width: 140px;
+  height: 32px;
+  padding: 0 8px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  font-family: var(--ios-mono);
+  background: #f2f2f7;
+  border: 1px solid var(--ios-separator);
+  border-radius: 7px;
+  color: #0f172a;
+}
+
+.edd-input:focus {
+  outline: none;
+  background: #ffffff;
+  border-color: var(--ios-blue);
+}
+
 .btn-new-patient-action {
   background: #e2e8f0;
   border: none;
@@ -398,11 +417,28 @@ body.mode-landscape .landscape-view {
   border-bottom: none;
 }
 
+.ga-label-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
 .row-label {
   font-size: 0.95rem;
   font-weight: 500;
   color: #000000;
-  flex: 1;
+}
+
+.ga-auto-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--ios-blue);
+  font-family: var(--ios-mono);
+}
+
+.ga-auto-badge.hidden {
+  display: none !important;
 }
 
 .ga-input-cluster {
