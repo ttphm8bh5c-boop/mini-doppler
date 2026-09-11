@@ -107,6 +107,23 @@
   }
 
   /**
+   * 三碼 PI 快速輸入：125 → 1.25、075 → 0.75。
+   * 只轉換恰好三位數且換算後位於允許範圍內的字串；
+   * 已含小數點或不完整的輸入維持原樣，交由嚴格驗證處理。
+   */
+  function normalizePIShorthand(valueStr, min = 0.10, max = 5.00) {
+    if (typeof valueStr !== 'string' || !/^\d{3}$/.test(valueStr)) {
+      return valueStr;
+    }
+
+    const value = Number(valueStr) / 100;
+    if (!Number.isFinite(value) || value < min || value > max) {
+      return valueStr;
+    }
+    return value.toFixed(2);
+  }
+
+  /**
    * 計算 CPR = MCA PI / UmA PI
    */
   function calculateCPR(mcaPI, uaPI) {
@@ -354,7 +371,10 @@
   function setupInputs() {
     [elInputMca, elInputUma].forEach(input => {
       if (!input) return;
-      input.addEventListener('input', calculateAndRender);
+      input.addEventListener('input', () => {
+        input.value = normalizePIShorthand(input.value);
+        calculateAndRender();
+      });
       input.addEventListener('change', calculateAndRender);
       input.addEventListener('keyup', calculateAndRender);
     });
@@ -432,6 +452,7 @@
     zScoreToPercentile,
     validateGestationalAge,
     validateStrictDecimal,
+    normalizePIShorthand,
     calculateCPR,
     getCPRReference,
     CPR_COEFFICIENTS

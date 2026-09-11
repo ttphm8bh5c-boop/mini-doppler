@@ -123,6 +123,15 @@ assert(Core.validateStrictDecimal("   ").isValid === false, "空白字串拒絕"
 assert(Core.validateStrictDecimal("0.05").isValid === false, "'0.05' 低於臨床合理下限 (0.10) 拒絕");
 assert(Core.validateStrictDecimal("5.50").isValid === false, "'5.50' 超過臨床合理上限 (5.00) 拒絕");
 
+assert(Core.normalizePIShorthand("125") === "1.25", "三碼快速輸入 '125' 轉為 '1.25'");
+assert(Core.normalizePIShorthand("075") === "0.75", "三碼快速輸入 '075' 轉為 '0.75'");
+assert(Core.normalizePIShorthand("010") === "0.10", "三碼快速輸入下限 '010' 轉為 '0.10'");
+assert(Core.normalizePIShorthand("500") === "5.00", "三碼快速輸入上限 '500' 轉為 '5.00'");
+assert(Core.normalizePIShorthand("005") === "005", "低於下限的三碼輸入不轉換並交由驗證拒絕");
+assert(Core.normalizePIShorthand("550") === "550", "高於上限的三碼輸入不轉換並交由驗證拒絕");
+assert(Core.normalizePIShorthand("1.25") === "1.25", "既有小數輸入維持原樣");
+assert(Core.normalizePIShorthand("12") === "12", "未滿三碼輸入維持原樣");
+
 // =========================================================================
 // 測試項目 4: CPR 計算與 Fail-Closed 防護
 // =========================================================================

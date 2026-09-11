@@ -5,3 +5,6 @@ FetalDopplerBin
 Fetal Doppler.app/
 *.pyc
 __pycache__/
+*.xcuserstate
+xcuserdata/
+**/*.xcodeproj/project.xcworkspace/
