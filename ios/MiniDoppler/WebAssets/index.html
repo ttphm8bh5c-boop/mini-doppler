@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Mini Doppler · 胎兒 CPR 換算器</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="ios-app-body">
+
+  <div class="app-container">
+    
+    <!-- 1. 核心結果雙輸出卡片 (純數值換算，無任何正常／異常分類) -->
+    <header class="result-card">
+      <div class="card-top-title">Mini Doppler · FMF 2019 Table S1</div>
+
+      <div class="result-data-row">
+        <!-- CPR 數值 -->
+        <div class="result-col">
+          <span class="result-label">CPR 數值 (MCA / UmA)</span>
+          <div class="result-value" id="res-cpr-val">—</div>
+        </div>
+
+        <div class="result-divider"></div>
+
+        <!-- CPR 百分位數 (依 Table S1 獨立核驗模型) -->
+        <div class="result-col">
+          <span class="result-label">CPR 百分位數 (%)</span>
+          <div class="result-value" id="res-centile-val">—</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- 2. 懷孕週數轉輪 (嚴格限定 20+0 ～ 41+6) -->
+    <section class="ios-card wheel-card">
+      <div class="card-header">
+        <span class="card-title">懷孕週數 (20+0 ～ 41+6)</span>
+        <span class="card-highlight" id="ga-selected-display">24 週 0 天 (24.0w)</span>
+      </div>
+
+      <div class="ios-picker-wrapper">
+        <!-- 中心選取光帶 -->
+        <div class="picker-selection-indicator"></div>
+        <!-- 漸層深度遮罩 -->
+        <div class="picker-fade-mask"></div>
+
+        <!-- 週數滾輪 (20 ~ 41 週) -->
+        <div class="picker-column" id="picker-col-weeks">
+          <div class="picker-wheel" id="wheel-weeks">
+            <!-- 由 JavaScript 自動生成 20 至 41 -->
+          </div>
+        </div>
+
+        <div class="picker-divider">＋</div>
+
+        <!-- 天數滾輪 (0 ~ 6 天) -->
+        <div class="picker-column" id="picker-col-days">
+          <div class="picker-wheel" id="wheel-days">
+            <!-- 由 JavaScript 自動生成 0 至 6 -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. MCA PI 與 UmA PI 嚴格十進位輸入群組 -->
+    <section class="ios-card inputs-card">
+      <div class="doppler-input-row">
+        <label class="doppler-title" for="input-mca">MCA PI (大腦中動脈)</label>
+        <div class="input-field-box">
+          <input type="text" inputmode="decimal" id="input-mca" class="ios-number-input" value="" placeholder="例 125 → 1.25" autocomplete="off" />
+          <button type="button" class="btn-clear-input" id="btn-clear-mca" aria-label="清空 MCA PI">✕</button>
+        </div>
+      </div>
+
+      <div class="row-separator"></div>
+
+      <div class="doppler-input-row">
+        <label class="doppler-title" for="input-uma">UmA PI (臍動脈)</label>
+        <div class="input-field-box">
+          <input type="text" inputmode="decimal" id="input-uma" class="ios-number-input" value="" placeholder="例 075 → 0.75" autocomplete="off" />
+          <button type="button" class="btn-clear-input" id="btn-clear-uma" aria-label="清空 UmA PI">✕</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 頁尾文獻標示 (純統計參考模型，零病患資料儲存) -->
+    <footer class="app-footer">
+      <p class="citation-text">依 FMF 2019 Table S1 (Ciobanu et al.) 獨立核驗模型換算 · 純統計計算器</p>
+    </footer>
+
+  </div>
+
+  <script src="app.bundle.js"></script>
+</body>
+</html>
