@@ -1,0 +1,385 @@
+/* =========================================================================
+   極簡版 iPhone 胎兒多普勒 CPR 計算器樣式 (極致緊湊版 Ultra-Compact)
+   ========================================================================= */
+
+:root {
+  --ios-bg: #f2f2f7;
+  --ios-card: #ffffff;
+  --ios-card-border: #e5e5ea;
+  --ios-label: #8e8e93;
+  --ios-text: #1c1c1e;
+  --ios-blue: #007aff;
+  --ios-green: #34c759;
+  --ios-red: #ff3b30;
+  --card-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ios-bg: #000000;
+    --ios-card: #1c1c1e;
+    --ios-card-border: #2c2c2e;
+    --ios-label: #98989d;
+    --ios-text: #f2f2f7;
+    --card-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+  }
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  margin: 0;
+  padding: 0;
+}
+
+body.ios-app-body {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "PingFang TC", "Microsoft JhengHei", sans-serif;
+  background-color: var(--ios-bg);
+  color: var(--ios-text);
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: max(8px, env(safe-area-inset-top));
+  padding-bottom: max(10px, env(safe-area-inset-bottom));
+  padding-left: max(12px, env(safe-area-inset-left));
+  padding-right: max(12px, env(safe-area-inset-right));
+  user-select: none;
+  -webkit-user-select: none;
+  overflow-x: hidden;
+}
+
+.app-container {
+  width: 100%;
+  max-width: 390px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* 1. 核心結果雙輸出卡片 (整合標題，高度僅 ~80px) */
+.result-card {
+  background: linear-gradient(145deg, #0c1527 0%, #17243c 100%);
+  border-radius: 16px;
+  padding: 10px 14px 12px 14px;
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 16px rgba(12, 21, 39, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.card-top-title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 0.4px;
+  text-align: center;
+  margin-bottom: 4px;
+  opacity: 0.85;
+}
+
+.result-data-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.result-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.result-divider {
+  width: 1px;
+  height: 42px;
+  background: rgba(255, 255, 255, 0.15);
+  margin: 0 4px;
+}
+
+.result-label {
+  font-size: 0.68rem;
+  color: #94a3b8;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+
+.result-value {
+  font-size: 2.05rem;
+  font-weight: 800;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Rounded", "Roboto", monospace;
+  letter-spacing: -0.8px;
+  margin: 1px 0;
+  line-height: 1;
+  color: #38bdf8;
+}
+
+#res-centile-val {
+  color: #34d399;
+}
+
+.status-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 12px;
+  margin-top: 1px;
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.badge-normal {
+  background-color: rgba(52, 199, 89, 0.2);
+  color: #4ade80;
+  border: 1px solid rgba(52, 199, 89, 0.4);
+}
+
+.badge-abnormal {
+  background-color: rgba(255, 59, 48, 0.25);
+  color: #f87171;
+  border: 1px solid rgba(255, 59, 48, 0.4);
+}
+
+.badge-unknown {
+  background-color: rgba(148, 163, 184, 0.2);
+  color: #cbd5e1;
+}
+
+/* 通用 iOS 卡片 (緊湊無重疊) */
+.ios-card {
+  background-color: var(--ios-card);
+  border-radius: 16px;
+  padding: 10px 14px;
+  border: 1px solid var(--ios-card-border);
+  box-shadow: var(--card-shadow);
+  display: flex;
+  flex-direction: column;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.card-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--ios-text);
+}
+
+.card-highlight {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--ios-blue);
+  background-color: rgba(0, 122, 255, 0.08);
+  padding: 2px 7px;
+  border-radius: 8px;
+}
+
+/* 2. 懷孕週數轉輪 (高度精簡為 112px) */
+.ios-picker-wrapper {
+  position: relative;
+  height: 112px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 10px;
+  background-color: rgba(0, 0, 0, 0.015);
+}
+
+/* 中心選取指示框 */
+.picker-selection-indicator {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  top: 50%;
+  height: 32px;
+  transform: translateY(-50%);
+  border-radius: 7px;
+  background-color: rgba(0, 122, 255, 0.08);
+  border-top: 1.5px solid rgba(0, 122, 255, 0.3);
+  border-bottom: 1.5px solid rgba(0, 122, 255, 0.3);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* 漸層深度遮罩 */
+.picker-fade-mask {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  background: linear-gradient(
+    to bottom,
+    var(--ios-card) 0%,
+    rgba(255, 255, 255, 0.15) 20%,
+    rgba(255, 255, 255, 0) 38%,
+    rgba(255, 255, 255, 0) 62%,
+    rgba(255, 255, 255, 0.15) 80%,
+    var(--ios-card) 100%
+  );
+}
+
+@media (prefers-color-scheme: dark) {
+  .picker-fade-mask {
+    background: linear-gradient(
+      to bottom,
+      var(--ios-card) 0%,
+      rgba(28, 28, 30, 0.15) 20%,
+      rgba(28, 28, 30, 0) 38%,
+      rgba(28, 28, 30, 0) 62%,
+      rgba(28, 28, 30, 0.15) 80%,
+      var(--ios-card) 100%
+    );
+  }
+}
+
+.picker-column {
+  flex: 1;
+  height: 100%;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  position: relative;
+  z-index: 1;
+}
+
+.picker-column::-webkit-scrollbar {
+  display: none;
+}
+
+.picker-wheel {
+  padding: 40px 0; /* (112 - 32) / 2 = 40px 精確中心吸附 */
+}
+
+.picker-item {
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  scroll-snap-align: center;
+  font-size: 1.05rem;
+  font-weight: 500;
+  color: var(--ios-label);
+  cursor: pointer;
+  transition: transform 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+  user-select: none;
+}
+
+.picker-item.active {
+  color: var(--ios-blue);
+  font-weight: 700;
+  font-size: 1.18rem;
+  transform: scale(1.08);
+  opacity: 1;
+}
+
+.picker-divider {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--ios-label);
+  padding: 0 4px;
+  z-index: 4;
+}
+
+/* 3. 數字鍵盤輸入卡片 (單行緊湊式) */
+.inputs-card {
+  padding: 6px 14px;
+}
+
+.doppler-input-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+}
+
+.doppler-title {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--ios-text);
+  cursor: pointer;
+}
+
+.input-field-box {
+  background-color: var(--ios-bg);
+  border-radius: 10px;
+  border: 1.5px solid var(--ios-card-border);
+  padding: 1px 6px 1px 8px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.input-field-box:focus-within {
+  border-color: var(--ios-blue);
+  box-shadow: 0 0 0 2.5px rgba(0, 122, 255, 0.15);
+  background-color: var(--ios-card);
+}
+
+.ios-number-input {
+  width: 76px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  font-size: 1.45rem;
+  font-weight: 700;
+  text-align: right;
+  color: var(--ios-text);
+  outline: none;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Rounded", "Roboto", monospace;
+  letter-spacing: -0.5px;
+}
+
+/* 一鍵清空輸入按鈕 */
+.btn-clear-input {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background-color: #c7c7cc;
+  color: #ffffff;
+  border: none;
+  font-size: 0.65rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: opacity 0.15s ease, background-color 0.15s ease;
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.btn-clear-input:active {
+  opacity: 1;
+  background-color: #8e8e93;
+}
+
+.row-separator {
+  height: 1px;
+  background-color: var(--ios-card-border);
+  margin: 0;
+}
+
+/* 頁尾免責與文獻依據 */
+.app-footer {
+  text-align: center;
+  padding: 2px 8px 4px 8px;
+}
+
+.citation-text {
+  font-size: 0.64rem;
+  color: var(--ios-label);
+  line-height: 1.25;
+}
