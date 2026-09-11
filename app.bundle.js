@@ -1,5 +1,5 @@
 /**
- * 胎兒多普勒 CPR 極簡版控制器 (Fetal Doppler Minimal Controller)
+ * 胎兒多普勒 CPR 極簡版控制器 (轉輪滾動 ＋ 數字鍵盤輸入)
  * 專為 iPhone 快速臨床量測打造，零資料庫儲存，極致輕量。
  */
 
@@ -77,85 +77,67 @@
   }
 
   // =========================================================================
-  // 2. 介面元素與微調控制器 (UI Controller)
+  // 2. 狀態變數與 DOM 參照
   // =========================================================================
 
-  const elWeeks = document.getElementById('input-weeks');
-  const elDays = document.getElementById('input-days');
-  const elMca = document.getElementById('input-mca');
-  const elUma = document.getElementById('input-uma');
+  const ITEM_HEIGHT = 44; // 每個滾輪選項高度 44px
+  const MIN_WEEK = 20;
+  const MAX_WEEK = 42;
+
+  let currentWeek = 28;
+  let currentDay = 4;
 
   const elResCpr = document.getElementById('res-cpr-val');
   const elResCentile = document.getElementById('res-centile-val');
   const elResBadge = document.getElementById('res-status-badge');
+  const elGaSelectedDisplay = document.getElementById('ga-selected-display');
 
-  const elGaFeedback = document.getElementById('ga-feedback');
-  const elMcaFeedback = document.getElementById('mca-feedback');
-  const elUmaFeedback = document.getElementById('uma-feedback');
+  const elInputMca = document.getElementById('input-mca');
+  const elInputUma = document.getElementById('input-uma');
+
+  const elPickerColWeeks = document.getElementById('picker-col-weeks');
+  const elWheelWeeks = document.getElementById('wheel-weeks');
+  const elPickerColDays = document.getElementById('picker-col-days');
+  const elWheelDays = document.getElementById('wheel-days');
+
+  const elKeyboardBar = document.getElementById('ios-keyboard-bar');
+  const elKbFieldLabel = document.getElementById('kb-field-label');
+  const btnKbDone = document.getElementById('btn-kb-done');
+
+  // =========================================================================
+  // 3. 核心運算與介面更新 (Live Calculation)
+  // =========================================================================
 
   function calculateAndRender() {
-    const wVal = elWeeks ? elWeeks.value.trim() : '';
-    const dVal = elDays ? elDays.value.trim() : '0';
-    const mcaVal = elMca ? elMca.value.trim() : '';
-    const umaVal = elUma ? elUma.value.trim() : '';
+    const mcaVal = elInputMca ? elInputMca.value.trim() : '';
+    const umaVal = elInputUma ? elInputUma.value.trim() : '';
 
-    let hasError = false;
-
-    // 1. 懷孕週數檢核
-    const w = Number(wVal);
-    const d = Number(dVal);
-    if (!wVal || !Number.isInteger(w) || w < 10 || w > 44) {
-      if (elGaFeedback) elGaFeedback.textContent = '週數需在 20–42 週';
-      hasError = true;
-    } else if (!Number.isInteger(d) || d < 0 || d > 6) {
-      if (elGaFeedback) elGaFeedback.textContent = '天數需在 0–6 天';
-      hasError = true;
-    } else {
-      if (elGaFeedback) {
-        if (w < 20 || (w === 41 && d > 6) || w > 41) {
-          elGaFeedback.textContent = '超出 20–42w 驗證範圍';
-        } else {
-          elGaFeedback.textContent = '';
-        }
-      }
-    }
-
-    // 2. MCA PI 檢核
     const mca = Number(mcaVal);
-    if (!mcaVal || !Number.isFinite(mca) || mca <= 0) {
-      if (elMcaFeedback) elMcaFeedback.textContent = '需大於 0';
-      hasError = true;
-    } else {
-      if (elMcaFeedback) elMcaFeedback.textContent = '';
-    }
-
-    // 3. UmA PI 檢核
     const uma = Number(umaVal);
-    if (!umaVal || !Number.isFinite(uma) || uma <= 0) {
-      if (elUmaFeedback) elUmaFeedback.textContent = '需大於 0';
-      hasError = true;
-    } else {
-      if (elUmaFeedback) elUmaFeedback.textContent = '';
+
+    // 更新頂部週數標籤
+    const gaDec = currentWeek + (currentDay / 7);
+    if (elGaSelectedDisplay) {
+      elGaSelectedDisplay.textContent = `${currentWeek} 週 ${currentDay} 天 (${gaDec.toFixed(1)}w)`;
     }
 
-    // Fail-Closed 防護：若有任何輸入無效，立即重置輸出為 '—'
-    if (hasError) {
+    // Fail-Closed 防護：若輸入無效、負數或為空
+    if (!mcaVal || !umaVal || !Number.isFinite(mca) || !Number.isFinite(uma) || mca <= 0 || uma <= 0) {
       if (elResCpr) elResCpr.textContent = '—';
       if (elResCentile) elResCentile.textContent = '—';
       if (elResBadge) {
         elResBadge.className = 'status-badge badge-unknown';
-        elResBadge.textContent = '請輸入有效數值';
+        elResBadge.textContent = '待輸入有效 PI';
       }
       return;
     }
 
-    // 4. 計算 CPR
+    // 計算 CPR
     const cpr = calculateCPR(mca, uma);
     if (elResCpr) elResCpr.textContent = cpr.toFixed(2);
 
-    // 5. 計算 FMF 2019 百分位數 %
-    const gaDecimal = w + (d / 7);
-    const ref = getCPRReference(gaDecimal);
+    // 計算 FMF 2019 百分位數
+    const ref = getCPRReference(gaDec);
     const centile = ref.calculatePercentile(cpr);
 
     if (Number.isFinite(centile)) {
@@ -170,7 +152,7 @@
           if (elResCentile) elResCentile.style.color = '#f87171';
         } else {
           elResBadge.className = 'status-badge badge-normal';
-          elResBadge.textContent = '✓ 常態區間 (≥ 5th)';
+          elResBadge.textContent = '✓ 常態區基 (≥ 5th)';
           if (elResCentile) elResCentile.style.color = '#34d399';
         }
       }
@@ -184,76 +166,168 @@
   }
 
   // =========================================================================
-  // 3. 觸控微調按鈕邏輯 (Steppers)
+  // 4. 懷孕週數轉輪 (iOS Wheel Picker Implementation)
   // =========================================================================
 
-  function adjustWeeks(delta) {
-    const cur = parseInt(elWeeks.value, 10) || 28;
-    const next = Math.min(42, Math.max(20, cur + delta));
-    elWeeks.value = next;
-    calculateAndRender();
-  }
-
-  function adjustDays(delta) {
-    let w = parseInt(elWeeks.value, 10) || 28;
-    let d = parseInt(elDays.value, 10) || 0;
-    d += delta;
-
-    if (d > 6) {
-      if (w < 42) {
-        w += 1;
-        d = 0;
-      } else {
-        d = 6;
-      }
-    } else if (d < 0) {
-      if (w > 20) {
-        w -= 1;
-        d = 6;
-      } else {
-        d = 0;
-      }
+  function buildWheels() {
+    // 1. 建立週數選項 (20 ~ 42 週)
+    elWheelWeeks.innerHTML = '';
+    for (let w = MIN_WEEK; w <= MAX_WEEK; w++) {
+      const item = document.createElement('div');
+      item.className = 'picker-item';
+      item.dataset.val = w;
+      item.textContent = `${w} 週`;
+      item.addEventListener('click', () => scrollToWeek(w, true));
+      elWheelWeeks.appendChild(item);
     }
 
-    elWeeks.value = w;
-    elDays.value = d;
-    calculateAndRender();
+    // 2. 建立天數選項 (0 ~ 6 天)
+    elWheelDays.innerHTML = '';
+    for (let d = 0; d <= 6; d++) {
+      const item = document.createElement('div');
+      item.className = 'picker-item';
+      item.dataset.val = d;
+      item.textContent = `${d} 天`;
+      item.addEventListener('click', () => scrollToDay(d, true));
+      elWheelDays.appendChild(item);
+    }
   }
 
-  function adjustFloat(el, delta) {
-    const cur = parseFloat(el.value) || 1.0;
-    const next = Math.max(0.1, Math.round((cur + delta) * 100) / 100);
-    el.value = next.toFixed(2);
-    calculateAndRender();
+  function scrollToWeek(week, smooth = false) {
+    const idx = Math.max(0, Math.min(MAX_WEEK - MIN_WEEK, week - MIN_WEEK));
+    const targetTop = idx * ITEM_HEIGHT;
+    elPickerColWeeks.scrollTo({
+      top: targetTop,
+      behavior: smooth ? 'smooth' : 'auto'
+    });
+    updateWheelActiveState(elWheelWeeks, idx);
   }
 
-  // 掛載事件監聽
-  function init() {
-    [elWeeks, elDays, elMca, elUma].forEach(el => {
-      if (!el) return;
-      el.addEventListener('input', calculateAndRender);
-      el.addEventListener('change', calculateAndRender);
-      el.addEventListener('keyup', calculateAndRender);
+  function scrollToDay(day, smooth = false) {
+    const idx = Math.max(0, Math.min(6, day));
+    const targetTop = idx * ITEM_HEIGHT;
+    elPickerColDays.scrollTo({
+      top: targetTop,
+      behavior: smooth ? 'smooth' : 'auto'
+    });
+    updateWheelActiveState(elWheelDays, idx);
+  }
+
+  function updateWheelActiveState(wheelEl, activeIdx) {
+    const items = wheelEl.querySelectorAll('.picker-item');
+    items.forEach((it, idx) => {
+      if (idx === activeIdx) {
+        it.classList.add('active');
+      } else {
+        it.classList.remove('active');
+      }
+    });
+  }
+
+  let scrollTimerWeeks = null;
+  let scrollTimerDays = null;
+
+  function onWeeksScroll() {
+    const top = elPickerColWeeks.scrollTop;
+    const idx = Math.round(top / ITEM_HEIGHT);
+    const clampedIdx = Math.max(0, Math.min(MAX_WEEK - MIN_WEEK, idx));
+    const weekVal = MIN_WEEK + clampedIdx;
+
+    updateWheelActiveState(elWheelWeeks, clampedIdx);
+
+    if (currentWeek !== weekVal) {
+      currentWeek = weekVal;
+      calculateAndRender();
+    }
+
+    if (scrollTimerWeeks) clearTimeout(scrollTimerWeeks);
+    scrollTimerWeeks = setTimeout(() => {
+      // 停止滾動後自動微調吸附至整數中心
+      const target = clampedIdx * ITEM_HEIGHT;
+      if (Math.abs(elPickerColWeeks.scrollTop - target) > 1) {
+        elPickerColWeeks.scrollTo({ top: target, behavior: 'smooth' });
+      }
+    }, 120);
+  }
+
+  function onDaysScroll() {
+    const top = elPickerColDays.scrollTop;
+    const idx = Math.round(top / ITEM_HEIGHT);
+    const clampedIdx = Math.max(0, Math.min(6, idx));
+    const dayVal = clampedIdx;
+
+    updateWheelActiveState(elWheelDays, clampedIdx);
+
+    if (currentDay !== dayVal) {
+      currentDay = dayVal;
+      calculateAndRender();
+    }
+
+    if (scrollTimerDays) clearTimeout(scrollTimerDays);
+    scrollTimerDays = setTimeout(() => {
+      const target = clampedIdx * ITEM_HEIGHT;
+      if (Math.abs(elPickerColDays.scrollTop - target) > 1) {
+        elPickerColDays.scrollTo({ top: target, behavior: 'smooth' });
+      }
+    }, 120);
+  }
+
+  // =========================================================================
+  // 5. 數字鍵盤輸入與輔助工具列 (Keypad & Toolbar)
+  // =========================================================================
+
+  function setupKeypadInputs() {
+    [elInputMca, elInputUma].forEach(input => {
+      if (!input) return;
+
+      // 點選輸入框時全選文字（一鍵直接覆寫，無需連續按刪除鍵）
+      input.addEventListener('focus', function () {
+        setTimeout(() => this.select(), 50);
+        if (elKeyboardBar) {
+          elKeyboardBar.classList.remove('hidden');
+          if (elKbFieldLabel) {
+            elKbFieldLabel.textContent = this.id === 'input-mca' ? '大腦中動脈 MCA PI' : '臍動脈 UmA PI';
+          }
+        }
+      });
+
+      input.addEventListener('blur', function () {
+        setTimeout(() => {
+          if (!document.activeElement || (document.activeElement !== elInputMca && document.activeElement !== elInputUma)) {
+            elKeyboardBar?.classList.add('hidden');
+          }
+        }, 150);
+      });
+
+      input.addEventListener('input', calculateAndRender);
+      input.addEventListener('change', calculateAndRender);
+      input.addEventListener('keyup', calculateAndRender);
     });
 
-    // 週數按鈕
-    document.getElementById('btn-weeks-minus')?.addEventListener('click', () => adjustWeeks(-1));
-    document.getElementById('btn-weeks-plus')?.addEventListener('click', () => adjustWeeks(1));
+    btnKbDone?.addEventListener('click', function () {
+      if (elInputMca) elInputMca.blur();
+      if (elInputUma) elInputUma.blur();
+      elKeyboardBar?.classList.add('hidden');
+    });
+  }
 
-    // 天數按鈕
-    document.getElementById('btn-days-minus')?.addEventListener('click', () => adjustDays(-1));
-    document.getElementById('btn-days-plus')?.addEventListener('click', () => adjustDays(1));
+  // =========================================================================
+  // 6. 初始化啟動
+  // =========================================================================
 
-    // MCA PI 按鈕
-    document.getElementById('btn-mca-minus')?.addEventListener('click', () => adjustFloat(elMca, -0.05));
-    document.getElementById('btn-mca-plus')?.addEventListener('click', () => adjustFloat(elMca, 0.05));
+  function init() {
+    buildWheels();
+    setupKeypadInputs();
 
-    // UmA PI 按鈕
-    document.getElementById('btn-uma-minus')?.addEventListener('click', () => adjustFloat(elUma, -0.05));
-    document.getElementById('btn-uma-plus')?.addEventListener('click', () => adjustFloat(elUma, 0.05));
+    elPickerColWeeks.addEventListener('scroll', onWeeksScroll, { passive: true });
+    elPickerColDays.addEventListener('scroll', onDaysScroll, { passive: true });
 
-    // 啟動首次計算
-    calculateAndRender();
+    // 滾動至預設懷孕週數 (28 週 4 天)
+    setTimeout(() => {
+      scrollToWeek(28, false);
+      scrollToDay(4, false);
+      calculateAndRender();
+    }, 50);
   }
 
   if (document.readyState === 'loading') {

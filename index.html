@@ -32,76 +32,73 @@
       </div>
     </section>
 
-    <!-- 2. 極簡 3 欄輸入卡片 -->
-    <main class="inputs-container">
+    <!-- 2. 懷孕週數轉輪選擇器 (iOS Picker Wheel) -->
+    <section class="ios-card wheel-card">
+      <div class="card-header">
+        <span class="card-title">懷孕週數 (Gestational Age)</span>
+        <span class="card-highlight" id="ga-selected-display">28 週 4 天</span>
+      </div>
 
-      <!-- 輸入項一：懷孕週數 (週 + 天) -->
-      <div class="input-card">
-        <div class="input-card-header">
-          <label class="input-title">懷孕週數 (Gestational Age)</label>
-          <span id="ga-feedback" class="feedback-text"></span>
-        </div>
-        
-        <div class="ga-stepper-row">
-          <!-- 週數控制 -->
-          <div class="ga-subgroup">
-            <button type="button" class="btn-step" id="btn-weeks-minus" aria-label="週數減一">－</button>
-            <div class="input-unit-wrap">
-              <input type="number" id="input-weeks" value="28" min="20" max="42" step="1" inputmode="numeric" class="num-input" />
-              <span class="unit-text">週</span>
-            </div>
-            <button type="button" class="btn-step" id="btn-weeks-plus" aria-label="週數加一">＋</button>
+      <div class="ios-picker-wrapper">
+        <!-- 中心選取光帶 -->
+        <div class="picker-selection-indicator"></div>
+        <!-- 漸層深度遮罩 (營造滾輪立體景深) -->
+        <div class="picker-fade-mask"></div>
+
+        <!-- 週數滾輪 (20 ~ 42 週) -->
+        <div class="picker-column" id="picker-col-weeks">
+          <div class="picker-wheel" id="wheel-weeks">
+            <!-- 由 JavaScript 自動生成 -->
           </div>
+        </div>
 
-          <span class="ga-sep">＋</span>
+        <div class="picker-divider">＋</div>
 
-          <!-- 天數控制 -->
-          <div class="ga-subgroup ga-days-group">
-            <button type="button" class="btn-step" id="btn-days-minus" aria-label="天數減一">－</button>
-            <div class="input-unit-wrap">
-              <input type="number" id="input-days" value="4" min="0" max="6" step="1" inputmode="numeric" class="num-input" />
-              <span class="unit-text">天</span>
-            </div>
-            <button type="button" class="btn-step" id="btn-days-plus" aria-label="天數加一">＋</button>
+        <!-- 天數滾輪 (0 ~ 6 天) -->
+        <div class="picker-column" id="picker-col-days">
+          <div class="picker-wheel" id="wheel-days">
+            <!-- 由 JavaScript 自動生成 -->
           </div>
         </div>
       </div>
+    </section>
 
-      <!-- 輸入項二：MCA PI (大腦中動脈搏動指數) -->
-      <div class="input-card">
-        <div class="input-card-header">
-          <label class="input-title" for="input-mca">大腦中動脈 MCA PI</label>
-          <span id="mca-feedback" class="feedback-text"></span>
+    <!-- 3. MCA PI 與 UmA PI 數字鍵盤輸入群組 -->
+    <section class="ios-card inputs-card">
+      <div class="doppler-input-row">
+        <div class="doppler-label-wrap">
+          <label class="doppler-title" for="input-mca">大腦中動脈 MCA PI</label>
+          <span class="doppler-subtitle">Middle Cerebral Artery</span>
         </div>
-        
-        <div class="stepper-row">
-          <button type="button" class="btn-step" id="btn-mca-minus" aria-label="MCA PI 減 0.05">－</button>
-          <input type="number" id="input-mca" value="1.79" min="0.1" max="5.0" step="0.01" inputmode="decimal" class="num-input-large" placeholder="例如 1.79" />
-          <button type="button" class="btn-step" id="btn-mca-plus" aria-label="MCA PI 加 0.05">＋</button>
+        <div class="input-field-box">
+          <input type="text" inputmode="decimal" id="input-mca" class="ios-number-input" value="1.79" placeholder="1.79" autocomplete="off" />
         </div>
       </div>
 
-      <!-- 輸入項三：UmA PI (臍動脈搏動指數) -->
-      <div class="input-card">
-        <div class="input-card-header">
-          <label class="input-title" for="input-uma">臍動脈 UmA PI</label>
-          <span id="uma-feedback" class="feedback-text"></span>
+      <div class="row-separator"></div>
+
+      <div class="doppler-input-row">
+        <div class="doppler-label-wrap">
+          <label class="doppler-title" for="input-uma">臍動脈 UmA PI</label>
+          <span class="doppler-subtitle">Umbilical Artery</span>
         </div>
-        
-        <div class="stepper-row">
-          <button type="button" class="btn-step" id="btn-uma-minus" aria-label="UmA PI 減 0.05">－</button>
-          <input type="number" id="input-uma" value="0.88" min="0.1" max="5.0" step="0.01" inputmode="decimal" class="num-input-large" placeholder="例如 0.88" />
-          <button type="button" class="btn-step" id="btn-uma-plus" aria-label="UmA PI 加 0.05">＋</button>
+        <div class="input-field-box">
+          <input type="text" inputmode="decimal" id="input-uma" class="ios-number-input" value="0.88" placeholder="0.88" autocomplete="off" />
         </div>
       </div>
-
-    </main>
+    </section>
 
     <!-- 臨床指引免責與文獻依據 -->
     <footer class="app-footer">
-      <p class="citation-text">參考文獻：Fetal Medicine Foundation 2019 (Ciobanu et al., UOG 2019)</p>
+      <p class="citation-text">參考文獻：Fetal Medicine Foundation 2019 (Ciobanu et al.)</p>
       <p class="disclaimer-text">⚠️ 依據 ISUOG 2020 指引：本工具百分位數僅供產科臨床參考，請結合胎兒生長指標綜合評估。</p>
     </footer>
+  </div>
+
+  <!-- iOS 鍵盤工具列 (點擊輸入時浮出「完成」按鈕) -->
+  <div id="ios-keyboard-bar" class="keyboard-toolbar hidden">
+    <span class="kb-label" id="kb-field-label">輸入數值</span>
+    <button type="button" id="btn-kb-done" class="kb-done-btn">完成 ✕</button>
   </div>
 
   <script src="app.bundle.js"></script>
