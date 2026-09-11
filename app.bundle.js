@@ -1,5 +1,5 @@
 /**
- * 胎兒多普勒 CPR 極簡版控制器 (轉輪滾動 ＋ 數字鍵盤輸入)
+ * 胎兒多普勒 CPR 極簡版控制器 (吸頂結果 ＋ 轉輪滾動 ＋ 數字鍵盤輸入)
  * 專為 iPhone 快速臨床量測打造，零資料庫儲存，極致輕量。
  */
 
@@ -80,7 +80,7 @@
   // 2. 狀態變數與 DOM 參照
   // =========================================================================
 
-  const ITEM_HEIGHT = 44; // 每個滾輪選項高度 44px
+  const ITEM_HEIGHT = 38; // 緊湊型滾輪選項高度 38px
   const MIN_WEEK = 20;
   const MAX_WEEK = 42;
 
@@ -94,15 +94,13 @@
 
   const elInputMca = document.getElementById('input-mca');
   const elInputUma = document.getElementById('input-uma');
+  const btnClearMca = document.getElementById('btn-clear-mca');
+  const btnClearUma = document.getElementById('btn-clear-uma');
 
   const elPickerColWeeks = document.getElementById('picker-col-weeks');
   const elWheelWeeks = document.getElementById('wheel-weeks');
   const elPickerColDays = document.getElementById('picker-col-days');
   const elWheelDays = document.getElementById('wheel-days');
-
-  const elKeyboardBar = document.getElementById('ios-keyboard-bar');
-  const elKbFieldLabel = document.getElementById('kb-field-label');
-  const btnKbDone = document.getElementById('btn-kb-done');
 
   // =========================================================================
   // 3. 核心運算與介面更新 (Live Calculation)
@@ -152,7 +150,7 @@
           if (elResCentile) elResCentile.style.color = '#f87171';
         } else {
           elResBadge.className = 'status-badge badge-normal';
-          elResBadge.textContent = '✓ 常態區基 (≥ 5th)';
+          elResBadge.textContent = '✓ 常態區間 (≥ 5th)'; // 修復錯字
           if (elResCentile) elResCentile.style.color = '#34d399';
         }
       }
@@ -242,7 +240,6 @@
 
     if (scrollTimerWeeks) clearTimeout(scrollTimerWeeks);
     scrollTimerWeeks = setTimeout(() => {
-      // 停止滾動後自動微調吸附至整數中心
       const target = clampedIdx * ITEM_HEIGHT;
       if (Math.abs(elPickerColWeeks.scrollTop - target) > 1) {
         elPickerColWeeks.scrollTo({ top: target, behavior: 'smooth' });
@@ -273,30 +270,16 @@
   }
 
   // =========================================================================
-  // 5. 數字鍵盤輸入與輔助工具列 (Keypad & Toolbar)
+  // 5. 數字鍵盤輸入與清空按鈕
   // =========================================================================
 
   function setupKeypadInputs() {
     [elInputMca, elInputUma].forEach(input => {
       if (!input) return;
 
-      // 點選輸入框時全選文字（一鍵直接覆寫，無需連續按刪除鍵）
+      // 移除 this.select() 避免藍色水滴反白游標
       input.addEventListener('focus', function () {
-        setTimeout(() => this.select(), 50);
-        if (elKeyboardBar) {
-          elKeyboardBar.classList.remove('hidden');
-          if (elKbFieldLabel) {
-            elKbFieldLabel.textContent = this.id === 'input-mca' ? '大腦中動脈 MCA PI' : '臍動脈 UmA PI';
-          }
-        }
-      });
-
-      input.addEventListener('blur', function () {
-        setTimeout(() => {
-          if (!document.activeElement || (document.activeElement !== elInputMca && document.activeElement !== elInputUma)) {
-            elKeyboardBar?.classList.add('hidden');
-          }
-        }, 150);
+        // 自然聚焦
       });
 
       input.addEventListener('input', calculateAndRender);
@@ -304,10 +287,32 @@
       input.addEventListener('keyup', calculateAndRender);
     });
 
-    btnKbDone?.addEventListener('click', function () {
-      if (elInputMca) elInputMca.blur();
-      if (elInputUma) elInputUma.blur();
-      elKeyboardBar?.classList.add('hidden');
+    // 清空按鈕
+    btnClearMca?.addEventListener('click', function (e) {
+      e.stopPropagation();
+      if (elInputMca) {
+        elInputMca.value = '';
+        elInputMca.focus();
+        calculateAndRender();
+      }
+    });
+
+    btnClearUma?.addEventListener('click', function (e) {
+      e.stopPropagation();
+      if (elInputUma) {
+        elInputUma.value = '';
+        elInputUma.focus();
+        calculateAndRender();
+      }
+    });
+
+    // 點擊卡片空白區域自動收起鍵盤
+    document.addEventListener('click', function (e) {
+      if (!e.target.closest('.input-field-box')) {
+        if (document.activeElement && (document.activeElement === elInputMca || document.activeElement === elInputUma)) {
+          document.activeElement.blur();
+        }
+      }
     });
   }
 

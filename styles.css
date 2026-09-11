@@ -1,5 +1,5 @@
 /* =========================================================================
-   極簡版 iPhone 胎兒多普勒 CPR 計算器樣式 (轉輪選擇器 ＋ 數字鍵盤輸入)
+   極簡版 iPhone 胎兒多普勒 CPR 計算器樣式 (吸頂結果卡 ＋ 一屏緊湊適配)
    ========================================================================= */
 
 :root {
@@ -11,7 +11,7 @@
   --ios-blue: #007aff;
   --ios-green: #34c759;
   --ios-red: #ff3b30;
-  --card-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+  --card-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -21,7 +21,7 @@
     --ios-card-border: #2c2c2e;
     --ios-label: #98989d;
     --ios-text: #f2f2f7;
-    --card-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    --card-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
   }
 }
 
@@ -37,56 +37,62 @@ body.ios-app-body {
   background-color: var(--ios-bg);
   color: var(--ios-text);
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  padding-top: max(16px, env(safe-area-inset-top));
-  padding-bottom: max(28px, env(safe-area-inset-bottom));
-  padding-left: max(16px, env(safe-area-inset-left));
-  padding-right: max(16px, env(safe-area-inset-right));
+  padding-top: max(8px, env(safe-area-inset-top));
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+  padding-left: max(14px, env(safe-area-inset-left));
+  padding-right: max(14px, env(safe-area-inset-right));
   user-select: none;
   -webkit-user-select: none;
+  overflow-x: hidden;
 }
 
 .app-container {
   width: 100%;
-  max-width: 420px;
+  max-width: 414px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
 }
 
-/* 頂部導航列 */
+/* 頂部吸頂區 (Sticky Header: 鍵盤彈起時結果卡固定在頂部即時顯示) */
+.sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background-color: var(--ios-bg);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-bottom: 2px;
+}
+
+/* 頂部導航標題 */
 .ios-nav-header {
   text-align: center;
-  padding: 6px 0 2px 0;
+  padding: 2px 0;
 }
 
 .nav-title {
-  font-size: 1.35rem;
+  font-size: 1.15rem;
   font-weight: 700;
-  letter-spacing: -0.4px;
+  letter-spacing: -0.3px;
   color: var(--ios-text);
 }
 
-.nav-subtitle {
-  font-size: 0.78rem;
-  color: var(--ios-label);
-  font-weight: 500;
-  display: block;
-  margin-top: 1px;
-}
-
-/* 1. 核心結果雙輸出卡片 */
+/* 1. 核心結果雙輸出卡片 (緊湊精緻版) */
 .result-card {
   background: linear-gradient(145deg, #0c1527 0%, #17243c 100%);
-  border-radius: 20px;
-  padding: 20px 16px;
+  border-radius: 18px;
+  padding: 14px 16px;
   color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-shadow: 0 8px 24px rgba(12, 21, 39, 0.25);
+  box-shadow: 0 6px 20px rgba(12, 21, 39, 0.28);
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
@@ -100,26 +106,26 @@ body.ios-app-body {
 
 .result-divider {
   width: 1px;
-  height: 56px;
+  height: 48px;
   background: rgba(255, 255, 255, 0.15);
-  margin: 0 6px;
+  margin: 0 4px;
 }
 
 .result-label {
-  font-size: 0.76rem;
+  font-size: 0.72rem;
   color: #94a3b8;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.4px;
 }
 
 .result-value {
-  font-size: 2.6rem;
+  font-size: 2.35rem;
   font-weight: 800;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Rounded", "Roboto", monospace;
   letter-spacing: -1px;
-  margin: 3px 0;
-  line-height: 1;
+  margin: 2px 0;
+  line-height: 1.05;
   color: #38bdf8;
 }
 
@@ -128,18 +134,19 @@ body.ios-app-body {
 }
 
 .result-formula {
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   color: #64748b;
   font-weight: 500;
 }
 
 .status-badge {
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 700;
-  padding: 3px 10px;
-  border-radius: 20px;
-  margin-top: 4px;
+  padding: 2px 8px;
+  border-radius: 14px;
+  margin-top: 2px;
   display: inline-block;
+  white-space: nowrap;
 }
 
 .badge-normal {
@@ -162,8 +169,8 @@ body.ios-app-body {
 /* 通用 iOS 卡片 */
 .ios-card {
   background-color: var(--ios-card);
-  border-radius: 18px;
-  padding: 14px 16px;
+  border-radius: 16px;
+  padding: 12px 14px;
   border: 1px solid var(--ios-card-border);
   box-shadow: var(--card-shadow);
   display: flex;
@@ -174,45 +181,45 @@ body.ios-app-body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .card-title {
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 600;
   color: var(--ios-text);
 }
 
 .card-highlight {
-  font-size: 0.88rem;
+  font-size: 0.82rem;
   font-weight: 700;
   color: var(--ios-blue);
   background-color: rgba(0, 122, 255, 0.08);
-  padding: 3px 10px;
-  border-radius: 12px;
+  padding: 2px 8px;
+  border-radius: 10px;
 }
 
-/* 2. 懷孕週數轉輪 (iOS Wheel Picker) */
+/* 2. 懷孕週數轉輪 (高度精緻化 140px) */
 .ios-picker-wrapper {
   position: relative;
-  height: 176px;
+  height: 140px;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  border-radius: 14px;
-  background-color: rgba(0, 0, 0, 0.02);
+  border-radius: 12px;
+  background-color: rgba(0, 0, 0, 0.015);
 }
 
 /* 中心選取指示框 */
 .picker-selection-indicator {
   position: absolute;
-  left: 8px;
-  right: 8px;
+  left: 6px;
+  right: 6px;
   top: 50%;
-  height: 44px;
+  height: 38px;
   transform: translateY(-50%);
-  border-radius: 10px;
+  border-radius: 8px;
   background-color: rgba(0, 122, 255, 0.08);
   border-top: 1.5px solid rgba(0, 122, 255, 0.3);
   border-bottom: 1.5px solid rgba(0, 122, 255, 0.3);
@@ -229,10 +236,10 @@ body.ios-app-body {
   background: linear-gradient(
     to bottom,
     var(--ios-card) 0%,
-    rgba(255, 255, 255, 0.1) 26%,
-    rgba(255, 255, 255, 0) 45%,
-    rgba(255, 255, 255, 0) 55%,
-    rgba(255, 255, 255, 0.1) 74%,
+    rgba(255, 255, 255, 0.1) 22%,
+    rgba(255, 255, 255, 0) 42%,
+    rgba(255, 255, 255, 0) 58%,
+    rgba(255, 255, 255, 0.1) 78%,
     var(--ios-card) 100%
   );
 }
@@ -242,10 +249,10 @@ body.ios-app-body {
     background: linear-gradient(
       to bottom,
       var(--ios-card) 0%,
-      rgba(28, 28, 30, 0.1) 26%,
-      rgba(28, 28, 30, 0) 45%,
-      rgba(28, 28, 30, 0) 55%,
-      rgba(28, 28, 30, 0.1) 74%,
+      rgba(28, 28, 30, 0.1) 22%,
+      rgba(28, 28, 30, 0) 42%,
+      rgba(28, 28, 30, 0) 58%,
+      rgba(28, 28, 30, 0.1) 78%,
       var(--ios-card) 100%
     );
   }
@@ -267,16 +274,16 @@ body.ios-app-body {
 }
 
 .picker-wheel {
-  padding: 66px 0; /* (176 - 44) / 2 = 66px 精確置中對齊 */
+  padding: 51px 0; /* (140 - 38) / 2 = 51px 精確置中對齊 */
 }
 
 .picker-item {
-  height: 44px;
+  height: 38px;
   display: flex;
   align-items: center;
   justify-content: center;
   scroll-snap-align: center;
-  font-size: 1.22rem;
+  font-size: 1.15rem;
   font-weight: 500;
   color: var(--ios-label);
   cursor: pointer;
@@ -287,13 +294,13 @@ body.ios-app-body {
 .picker-item.active {
   color: var(--ios-blue);
   font-weight: 700;
-  font-size: 1.38rem;
+  font-size: 1.3rem;
   transform: scale(1.08);
   opacity: 1;
 }
 
 .picker-divider {
-  font-size: 1.4rem;
+  font-size: 1.3rem;
   font-weight: 700;
   color: var(--ios-label);
   padding: 0 4px;
@@ -302,31 +309,31 @@ body.ios-app-body {
 
 /* 3. 數字鍵盤輸入卡片 */
 .inputs-card {
-  padding: 8px 16px;
+  padding: 6px 14px;
 }
 
 .doppler-input-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 0;
+  padding: 8px 0;
 }
 
 .doppler-label-wrap {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
 }
 
 .doppler-title {
-  font-size: 1.02rem;
+  font-size: 0.98rem;
   font-weight: 600;
   color: var(--ios-text);
   cursor: pointer;
 }
 
 .doppler-subtitle {
-  font-size: 0.74rem;
+  font-size: 0.72rem;
   color: var(--ios-label);
   font-weight: 500;
 }
@@ -335,9 +342,10 @@ body.ios-app-body {
   background-color: var(--ios-bg);
   border-radius: 12px;
   border: 1.5px solid var(--ios-card-border);
-  padding: 4px 12px;
+  padding: 2px 8px 2px 10px;
   display: flex;
   align-items: center;
+  gap: 4px;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -348,17 +356,41 @@ body.ios-app-body {
 }
 
 .ios-number-input {
-  width: 100px;
+  width: 82px;
   height: 38px;
   border: none;
   background: transparent;
-  font-size: 1.65rem;
+  font-size: 1.55rem;
   font-weight: 700;
   text-align: right;
   color: var(--ios-text);
   outline: none;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Rounded", "Roboto", monospace;
   letter-spacing: -0.5px;
+}
+
+/* 一鍵清空輸入按鈕 (iOS 經典圓形灰底 ✕) */
+.btn-clear-input {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: #c7c7cc;
+  color: #ffffff;
+  border: none;
+  font-size: 0.68rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: opacity 0.15s ease, background-color 0.15s ease;
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.btn-clear-input:active {
+  opacity: 1;
+  background-color: #8e8e93;
 }
 
 .row-separator {
@@ -370,66 +402,11 @@ body.ios-app-body {
 /* 頁尾免責與文獻依據 */
 .app-footer {
   text-align: center;
-  padding: 4px 12px 12px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  padding: 4px 8px 8px 8px;
 }
 
 .citation-text {
-  font-size: 0.72rem;
-  color: var(--ios-label);
-  font-weight: 500;
-}
-
-.disclaimer-text {
   font-size: 0.68rem;
   color: var(--ios-label);
   line-height: 1.35;
-}
-
-/* 浮動鍵盤「完成」工具列 */
-.keyboard-toolbar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 44px;
-  background-color: rgba(242, 242, 247, 0.95);
-  backdrop-filter: blur(15px);
-  -webkit-backdrop-filter: blur(15px);
-  border-top: 0.5px solid rgba(0, 0, 0, 0.15);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 16px;
-  z-index: 100;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
-}
-
-@media (prefers-color-scheme: dark) {
-  .keyboard-toolbar {
-    background-color: rgba(28, 28, 30, 0.95);
-    border-top-color: rgba(255, 255, 255, 0.15);
-  }
-}
-
-.keyboard-toolbar.hidden {
-  display: none !important;
-}
-
-.kb-label {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--ios-label);
-}
-
-.kb-done-btn {
-  background: none;
-  border: none;
-  color: var(--ios-blue);
-  font-size: 0.95rem;
-  font-weight: 700;
-  cursor: pointer;
-  padding: 6px 10px;
 }
