@@ -3,191 +3,107 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>胎兒 CPR 縱向追蹤計算器</title>
+  <title>胎兒多普勒 CPR 計算器</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
-<body class="mode-portrait">
-  <!-- 即時 Toast 提示彈窗 (支援各裝置與無阻斷視覺回饋) -->
-  <div id="app-toast" class="app-toast hidden"></div>
+<body class="ios-app-body">
 
-  <!-- =========================================================================
-       模式一：直屏模式 (Portrait Mode) - 嚴格病患隔離、單手輸入與歷程清單
-       ========================================================================= -->
-  <div id="container-portrait" class="view-container portrait-view">
-    <!-- 頂部導航列 -->
-    <header class="ios-nav-bar">
-      <div class="nav-content">
-        <div>
-          <h1 class="nav-title">CPR 縱向追蹤</h1>
-          <span class="nav-patient-indicator" id="nav-patient-indicator">未指定病歷號（新病患）</span>
-        </div>
-        <button type="button" id="btn-toggle-to-chart" class="nav-chart-btn" title="查看全螢幕多點趨勢圖表">
-          📊 全幅趨勢圖
-        </button>
-      </div>
+  <div class="app-container">
+    <!-- 頂部標題列 (iOS Navigation Bar) -->
+    <header class="ios-nav-header">
+      <h1 class="nav-title">胎兒 CPR 計算器</h1>
+      <span class="nav-subtitle">Fetal Cerebroplacental Ratio</span>
     </header>
 
-    <!-- 臨床研究用途與多模態評估聲明 (ISUOG 2020 FGR Guideline) -->
-    <div class="clinical-disclaimer-banner">
-      ⚠️ 依據 ISUOG 2020 指引：本工具之 CPR 百分位數僅供臨床學術與多模態輔助參考，不得作為單一醫療決策之唯一依據。
-    </div>
-
-    <main class="portrait-body">
-      <!-- 1. 病歷號管理與預產期 (Patient Profile Card) -->
-      <section class="ios-card patient-card">
-        <div class="patient-row">
-          <label class="patient-label" for="input-patient-mrn">病歷號</label>
-          <div class="patient-input-wrap">
-            <input type="text" id="input-patient-mrn" value="" placeholder="請輸入病歷號 (例如 A1234)" class="mrn-input" autocomplete="off" />
-            <button type="button" id="btn-new-patient" class="btn-new-patient-action" title="建立新病患 / 清空欄位">
-              ➕ 新病人
-            </button>
-          </div>
-        </div>
-        <div id="notice-patient" class="field-error-msg hidden" style="color: #0284c7; padding: 4px 6px; font-weight: 500;"></div>
-
-        <!-- 預產期 (EDD / EDC) -->
-        <div class="patient-row">
-          <label class="patient-label" for="input-patient-edd">預產期 (EDD)</label>
-          <div class="patient-input-wrap">
-            <input type="text" id="input-patient-edd" placeholder="例如 2026-11-20 或 11/20" class="edd-input" autocomplete="off" />
-            <button type="button" id="btn-calc-ga" class="btn-calc-ga-action" title="由預產期立即換算週數">⚡ 換算週數</button>
-          </div>
-        </div>
-
-        <div class="patient-switch-row">
-          <select id="select-recent-patients" class="recent-select-full" title="載入既有病患歷史檔案">
-            <option value="">📂 載入既有病歷檔案...</option>
-          </select>
-        </div>
-
-        <div class="patient-time-row">
-          <label class="time-label" for="input-measurement-time">量測時間：</label>
-          <div class="time-input-wrap">
-            <input type="text" id="input-measurement-time" value="" placeholder="YYYY-MM-DD HH:mm" class="time-input" />
-            <button type="button" id="btn-now-time" class="btn-time-now" title="填入當前時間">⏰ 現在</button>
-          </div>
-        </div>
-      </section>
-
-      <!-- 2. 當次 CPR 核心結果大卡片 (嚴格限「同病患」比對) -->
-      <section class="ios-card result-hero-card">
-        <div class="hero-cpr-header">
-          <span class="hero-label">本次 CPR 數值</span>
-          <span class="hero-label">百分位數 (參考值)</span>
-        </div>
-
-        <div class="hero-numbers-row">
-          <div class="hero-cpr-val" id="display-cpr-num">2.03</div>
-          <div class="hero-centile-val" id="display-cpr-centile">72.8%</div>
-        </div>
-
-        <div class="hero-footer-row">
-          <span id="display-cpr-status-badge" class="ios-badge badge-normal">
-            常態區間 (≥ 第 5 百分位)
-          </span>
-          <!-- 嚴格同病患歷史比對徽章 -->
-          <span id="display-trend-badge" class="trend-badge badge-stable">
-            新病患（無對比）
-          </span>
-        </div>
-      </section>
-
-      <!-- 3. 單手 3 欄輸入格 (Fail-Closed 嚴格驗證) -->
-      <section class="ios-card inputs-card">
-        <!-- 懷孕週數 -->
-        <div class="ios-list-row">
-          <div class="ga-label-wrap">
-            <label class="row-label">懷孕週數</label>
-            <span id="ga-auto-badge" class="ga-auto-badge hidden">由預產期推算</span>
-            <span id="error-ga" class="field-error-msg hidden"></span>
-          </div>
-          <div class="ga-input-cluster">
-            <input type="number" id="input-ga-weeks" value="28" min="20" max="42" step="1" inputmode="numeric" class="ga-num-input" />
-            <span class="ga-unit">週</span>
-            <span class="ga-plus">+</span>
-            <input type="number" id="input-ga-days" value="4" min="0" max="6" step="1" inputmode="numeric" class="ga-num-input" />
-            <span class="ga-unit">天</span>
-          </div>
-        </div>
-
-        <!-- MCA PI -->
-        <div class="ios-list-row">
-          <div class="ga-label-wrap">
-            <label class="row-label" for="input-mca-pi">MCA PI</label>
-            <span id="error-mca" class="field-error-msg hidden"></span>
-          </div>
-          <input type="number" id="input-mca-pi" value="1.79" step="0.01" min="0.1" max="5.0" inputmode="decimal" class="row-single-input" placeholder="例如 1.79" />
-        </div>
-
-        <!-- UmA PI -->
-        <div class="ios-list-row last-row">
-          <div class="ga-label-wrap">
-            <label class="row-label" for="input-uma-pi">UmA PI</label>
-            <span id="error-uma" class="field-error-msg hidden"></span>
-          </div>
-          <input type="number" id="input-uma-pi" value="0.88" step="0.01" min="0.1" max="5.0" inputmode="decimal" class="row-single-input" placeholder="例如 0.88" />
-        </div>
-      </section>
-
-      <!-- 4. 儲存按鈕組 -->
-      <div class="action-btn-group">
-        <button type="button" id="btn-save-measurement" class="btn-save-record">
-          💾 儲存本次量測至病歷
-        </button>
+    <!-- 1. 核心結果雙輸出卡片 (CPR 數值 ＆ 百分位數 %) -->
+    <section class="result-card">
+      <div class="result-col">
+        <span class="result-label">CPR 數值</span>
+        <div class="result-value" id="res-cpr-val">2.03</div>
+        <span class="result-formula">MCA PI / UmA PI</span>
       </div>
 
-      <!-- 5. 該病患歷史追蹤歷程 (Timeline History) -->
-      <section class="ios-card history-card" id="card-history">
-        <div class="history-header">
-          <span class="history-title" id="history-header-title">📅 追蹤歷程 (0 次測量)</span>
-          <span class="history-sub">限同一病患縱向比對</span>
+      <div class="result-divider"></div>
+
+      <div class="result-col">
+        <span class="result-label">百分位數 (參考值)</span>
+        <div class="result-value" id="res-centile-val">72.8%</div>
+        <span id="res-status-badge" class="status-badge badge-normal">常態區間 (≥ 5th)</span>
+      </div>
+    </section>
+
+    <!-- 2. 極簡 3 欄輸入卡片 -->
+    <main class="inputs-container">
+
+      <!-- 輸入項一：懷孕週數 (週 + 天) -->
+      <div class="input-card">
+        <div class="input-card-header">
+          <label class="input-title">懷孕週數 (Gestational Age)</label>
+          <span id="ga-feedback" class="feedback-text"></span>
         </div>
-        <div id="history-list-mount" class="history-list">
-          <div class="history-empty">目前為新病患，尚未有已儲存紀錄。</div>
+        
+        <div class="ga-stepper-row">
+          <!-- 週數控制 -->
+          <div class="ga-subgroup">
+            <button type="button" class="btn-step" id="btn-weeks-minus" aria-label="週數減一">－</button>
+            <div class="input-unit-wrap">
+              <input type="number" id="input-weeks" value="28" min="20" max="42" step="1" inputmode="numeric" class="num-input" />
+              <span class="unit-text">週</span>
+            </div>
+            <button type="button" class="btn-step" id="btn-weeks-plus" aria-label="週數加一">＋</button>
+          </div>
+
+          <span class="ga-sep">＋</span>
+
+          <!-- 天數控制 -->
+          <div class="ga-subgroup ga-days-group">
+            <button type="button" class="btn-step" id="btn-days-minus" aria-label="天數減一">－</button>
+            <div class="input-unit-wrap">
+              <input type="number" id="input-days" value="4" min="0" max="6" step="1" inputmode="numeric" class="num-input" />
+              <span class="unit-text">天</span>
+            </div>
+            <button type="button" class="btn-step" id="btn-days-plus" aria-label="天數加一">＋</button>
+          </div>
         </div>
-      </section>
+      </div>
+
+      <!-- 輸入項二：MCA PI (大腦中動脈搏動指數) -->
+      <div class="input-card">
+        <div class="input-card-header">
+          <label class="input-title" for="input-mca">大腦中動脈 MCA PI</label>
+          <span id="mca-feedback" class="feedback-text"></span>
+        </div>
+        
+        <div class="stepper-row">
+          <button type="button" class="btn-step" id="btn-mca-minus" aria-label="MCA PI 減 0.05">－</button>
+          <input type="number" id="input-mca" value="1.79" min="0.1" max="5.0" step="0.01" inputmode="decimal" class="num-input-large" placeholder="例如 1.79" />
+          <button type="button" class="btn-step" id="btn-mca-plus" aria-label="MCA PI 加 0.05">＋</button>
+        </div>
+      </div>
+
+      <!-- 輸入項三：UmA PI (臍動脈搏動指數) -->
+      <div class="input-card">
+        <div class="input-card-header">
+          <label class="input-title" for="input-uma">臍動脈 UmA PI</label>
+          <span id="uma-feedback" class="feedback-text"></span>
+        </div>
+        
+        <div class="stepper-row">
+          <button type="button" class="btn-step" id="btn-uma-minus" aria-label="UmA PI 減 0.05">－</button>
+          <input type="number" id="input-uma" value="0.88" min="0.1" max="5.0" step="0.01" inputmode="decimal" class="num-input-large" placeholder="例如 0.88" />
+          <button type="button" class="btn-step" id="btn-uma-plus" aria-label="UmA PI 加 0.05">＋</button>
+        </div>
+      </div>
+
     </main>
+
+    <!-- 臨床指引免責與文獻依據 -->
+    <footer class="app-footer">
+      <p class="citation-text">參考文獻：Fetal Medicine Foundation 2019 (Ciobanu et al., UOG 2019)</p>
+      <p class="disclaimer-text">⚠️ 依據 ISUOG 2020 指引：本工具百分位數僅供產科臨床參考，請結合胎兒生長指標綜合評估。</p>
+    </footer>
   </div>
 
-  <!-- =========================================================================
-       模式二：橫屏模式 (Landscape Mode) - 全幅多時點 CPR 趨勢折線圖
-       ========================================================================= -->
-  <div id="container-landscape" class="view-container landscape-view">
-    <!-- 橫屏頂部控制列 -->
-    <header class="landscape-header">
-      <div class="ls-patient-badge">
-        <span class="ls-dot-indicator" id="ls-status-dot"></span>
-        <span id="ls-patient-summary">單次測量落點</span>
-      </div>
-
-      <div class="ls-trend-summary" id="ls-trend-text">
-        單次測量模式
-      </div>
-
-      <button type="button" id="btn-back-to-input" class="ls-back-btn">
-        ↺ 返回輸入
-      </button>
-    </header>
-
-    <!-- 橫屏全螢幕多時點趨勢圖表畫布 -->
-    <div id="landscape-chart-mount" class="landscape-chart-container"></div>
-  </div>
-
-  <!-- =========================================================================
-       iOS 鍵盤專屬工具列 (Keyboard Accessory Toolbar)
-       ========================================================================= -->
-  <div id="ios-kb-toolbar" class="ios-kb-toolbar hidden">
-    <div class="kb-toolbar-left">
-      <span class="kb-current-label" id="kb-current-label">輸入中...</span>
-    </div>
-    <div class="kb-toolbar-right">
-      <button type="button" id="btn-kb-next" class="kb-action-btn">下一格 ➔</button>
-      <button type="button" id="btn-kb-done" class="kb-done-btn">完成 ✕</button>
-    </div>
-  </div>
-
-  <!-- 獨立自包含腳本 (免除 file:// 協定下的 WebKit CORS 限制，保證按鈕與事件 100% 響應) -->
   <script src="app.bundle.js"></script>
 </body>
 </html>
