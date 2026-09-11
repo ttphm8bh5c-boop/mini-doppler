@@ -36,22 +36,22 @@ export function interpretCPR(percentile) {
   if (percentile < THRESHOLDS.CPR_ABNORMAL_CENTILE) {
     return {
       status: 'abnormal',
-      statusText: '異常（< 第 5 百分位數）',
-      statement: '異常低 CPR（<5th centile），符合腦血流重新分佈／腦保護模式（cerebral blood-flow redistribution / brain-sparing pattern）。'
+      statusText: '⚠️ 低於第 5 百分位 (參考值)',
+      statement: '異常低 CPR（<5th centile），符合腦血流重新分佈／腦保護模式。依據 ISUOG 2020 指引，應結合生長指標、羊水量與都卜勒整體多模態綜合評估，不得單憑此數值獨立診斷。'
     };
   }
 
   if (percentile < THRESHOLDS.CPR_BORDERLINE_CENTILE) {
     return {
       status: 'borderline',
-      statusText: '臨界偏低（第 5–10 百分位數）',
-      statement: 'CPR 在該懷孕週數參考範圍內，屬臨界偏低（5th–10th centile）。'
+      statusText: '臨界區間（第 5–10 百分位）',
+      statement: 'CPR 在該懷孕週數參考範圍內，屬臨界偏低區間（5th–10th centile）。'
     };
   }
 
   return {
     status: 'normal',
-    statusText: '正常（≥ 第 5 百分位數）',
+    statusText: '常態區間（≥ 第 5 百分位）',
     statement: 'CPR 在該懷孕週數參考範圍內（CPR within gestational-age reference range）。'
   };
 }

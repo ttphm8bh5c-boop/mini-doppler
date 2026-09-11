@@ -7,6 +7,8 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body class="mode-portrait">
+  <!-- 即時 Toast 提示彈窗 (支援各裝置與無阻斷視覺回饋) -->
+  <div id="app-toast" class="app-toast hidden"></div>
 
   <!-- =========================================================================
        模式一：直屏模式 (Portrait Mode) - 嚴格病患隔離、單手輸入與歷程清單
@@ -25,8 +27,12 @@
       </div>
     </header>
 
+    <!-- 臨床研究用途與多模態評估聲明 (ISUOG 2020 FGR Guideline) -->
+    <div class="clinical-disclaimer-banner">
+      ⚠️ 依據 ISUOG 2020 指引：本工具之 CPR 百分位數僅供臨床學術與多模態輔助參考，不得作為單一醫療決策之唯一依據。
+    </div>
+
     <main class="portrait-body">
-      <!-- 1. 病歷號管理與切換卡片 (嚴格獨立病歷檔案) -->
       <!-- 1. 病歷號管理與預產期 (Patient Profile Card) -->
       <section class="ios-card patient-card">
         <div class="patient-row">
@@ -38,12 +44,13 @@
             </button>
           </div>
         </div>
+        <div id="notice-patient" class="field-error-msg hidden" style="color: #0284c7; padding: 4px 6px; font-weight: 500;"></div>
 
         <!-- 預產期 (EDD / EDC) -->
         <div class="patient-row">
           <label class="patient-label" for="input-patient-edd">預產期 (EDD)</label>
           <div class="patient-input-wrap">
-            <input type="text" id="input-patient-edd" placeholder="例如 2026-11-20" class="edd-input" autocomplete="off" />
+            <input type="text" id="input-patient-edd" placeholder="例如 2026-11-20 或 11/20" class="edd-input" autocomplete="off" />
             <button type="button" id="btn-calc-ga" class="btn-calc-ga-action" title="由預產期立即換算週數">⚡ 換算週數</button>
           </div>
         </div>
@@ -67,17 +74,17 @@
       <section class="ios-card result-hero-card">
         <div class="hero-cpr-header">
           <span class="hero-label">本次 CPR 數值</span>
-          <span class="hero-label">百分位數</span>
+          <span class="hero-label">百分位數 (參考值)</span>
         </div>
 
         <div class="hero-numbers-row">
           <div class="hero-cpr-val" id="display-cpr-num">2.03</div>
-          <div class="hero-centile-val" id="display-cpr-centile">80.5%</div>
+          <div class="hero-centile-val" id="display-cpr-centile">72.8%</div>
         </div>
 
         <div class="hero-footer-row">
           <span id="display-cpr-status-badge" class="ios-badge badge-normal">
-            ✓ 正常 (≥ 第 5 百分位)
+            常態區間 (≥ 第 5 百分位)
           </span>
           <!-- 嚴格同病患歷史比對徽章 -->
           <span id="display-trend-badge" class="trend-badge badge-stable">
@@ -86,13 +93,14 @@
         </div>
       </section>
 
-      <!-- 3. 單手 3 欄輸入格 (44pt+ 觸控高度) -->
+      <!-- 3. 單手 3 欄輸入格 (Fail-Closed 嚴格驗證) -->
       <section class="ios-card inputs-card">
         <!-- 懷孕週數 -->
         <div class="ios-list-row">
           <div class="ga-label-wrap">
             <label class="row-label">懷孕週數</label>
             <span id="ga-auto-badge" class="ga-auto-badge hidden">由預產期推算</span>
+            <span id="error-ga" class="field-error-msg hidden"></span>
           </div>
           <div class="ga-input-cluster">
             <input type="number" id="input-ga-weeks" value="28" min="20" max="42" step="1" inputmode="numeric" class="ga-num-input" />
@@ -105,14 +113,20 @@
 
         <!-- MCA PI -->
         <div class="ios-list-row">
-          <label class="row-label" for="input-mca-pi">MCA PI</label>
-          <input type="number" id="input-mca-pi" value="1.79" step="0.01" min="0.1" max="4.0" inputmode="decimal" class="row-single-input" placeholder="例如 1.79" />
+          <div class="ga-label-wrap">
+            <label class="row-label" for="input-mca-pi">MCA PI</label>
+            <span id="error-mca" class="field-error-msg hidden"></span>
+          </div>
+          <input type="number" id="input-mca-pi" value="1.79" step="0.01" min="0.1" max="5.0" inputmode="decimal" class="row-single-input" placeholder="例如 1.79" />
         </div>
 
         <!-- UmA PI -->
         <div class="ios-list-row last-row">
-          <label class="row-label" for="input-uma-pi">UmA PI</label>
-          <input type="number" id="input-uma-pi" value="0.88" step="0.01" min="0.1" max="4.0" inputmode="decimal" class="row-single-input" placeholder="例如 0.88" />
+          <div class="ga-label-wrap">
+            <label class="row-label" for="input-uma-pi">UmA PI</label>
+            <span id="error-uma" class="field-error-msg hidden"></span>
+          </div>
+          <input type="number" id="input-uma-pi" value="0.88" step="0.01" min="0.1" max="5.0" inputmode="decimal" class="row-single-input" placeholder="例如 0.88" />
         </div>
       </section>
 
@@ -135,7 +149,6 @@
       </section>
     </main>
   </div>
-
 
   <!-- =========================================================================
        模式二：橫屏模式 (Landscape Mode) - 全幅多時點 CPR 趨勢折線圖
@@ -161,7 +174,6 @@
     <div id="landscape-chart-mount" class="landscape-chart-container"></div>
   </div>
 
-
   <!-- =========================================================================
        iOS 鍵盤專屬工具列 (Keyboard Accessory Toolbar)
        ========================================================================= -->
@@ -175,867 +187,7 @@
     </div>
   </div>
 
-
-  <!-- 內建純原生資料庫與演算法腳本 (嚴格病患獨立隔離與正確對比邏輯) -->
-  <script>
-    (function () {
-      var STORAGE_KEY = 'fetal_doppler_patients_v1';
-
-      var DB = {
-        getAll: function () {
-          try {
-            var data = localStorage.getItem(STORAGE_KEY);
-            return data ? JSON.parse(data) : {};
-          } catch (e) {
-            return {};
-          }
-        },
-        getRecords: function (mrn) {
-          if (!mrn || !mrn.trim()) return [];
-          var all = this.getAll();
-          var key = mrn.trim().toUpperCase();
-          var p = all[key];
-          if (!p || !p.records) return [];
-          return p.records.slice().sort(function (a, b) { return a.gaDecimal - b.gaDecimal; });
-        },
-        getPatient: function (mrn) {
-          if (!mrn) return null;
-          var all = this.getAll();
-          return all[mrn.trim().toUpperCase()] || null;
-        },
-        save: function (mrn, entry, edd) {
-          if (!mrn || !mrn.trim()) return [];
-          var key = mrn.trim().toUpperCase();
-          var all = this.getAll();
-          if (!all[key]) {
-            all[key] = { mrn: key, createdAt: new Date().toISOString(), edd: edd || '', records: [] };
-          }
-          if (edd) all[key].edd = edd;
-          all[key].lastUpdated = new Date().toISOString();
-
-          var now = new Date();
-          var timestamp = entry.timestamp ||
-            (now.getFullYear() + '-' +
-            String(now.getMonth() + 1).padStart(2, '0') + '-' +
-            String(now.getDate()).padStart(2, '0') + ' ' +
-            String(now.getHours()).padStart(2, '0') + ':' +
-            String(now.getMinutes()).padStart(2, '0'));
-
-          var newRec = {
-            id: 'rec_' + Date.now(),
-            timestamp: timestamp,
-            weeks: entry.weeks,
-            days: entry.days,
-            gaDecimal: entry.gaDecimal,
-            mcaPI: entry.mcaPI,
-            umaPI: entry.umaPI,
-            cpr: entry.cpr,
-            centile: entry.centile,
-            isAbnormal: entry.isAbnormal
-          };
-
-          all[key].records.push(newRec);
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
-          return this.getRecords(key);
-        },
-        delete: function (mrn, recId) {
-          if (!mrn) return [];
-          var key = mrn.trim().toUpperCase();
-          var all = this.getAll();
-          if (all[key] && all[key].records) {
-            all[key].records = all[key].records.filter(function (r) { return r.id !== recId; });
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
-          }
-          return this.getRecords(key);
-        },
-        listPatients: function () {
-          var all = this.getAll();
-          return Object.keys(all).map(function (k) {
-            return { mrn: k, count: all[k].records ? all[k].records.length : 0 };
-          });
-        }
-      };
-
-      function normalCDF(z) {
-        var t = 1.0 / (1.0 + 0.3275911 * Math.abs(z));
-        var poly = ((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t;
-        var erf = (z >= 0 ? 1 : -1) * (1.0 - poly * Math.exp(-z * z));
-        return 0.5 * (1.0 + erf);
-      }
-
-      function getFMFCPRReference(gaDays) {
-        var logMedian = -0.1820 + (0.00392 * gaDays) - (0.00000854 * gaDays * gaDays);
-        var median = Math.pow(10, logMedian);
-        var sd = 0.0952 - (0.000251 * gaDays) + (0.00000085 * gaDays * gaDays);
-        var z90 = 1.644853;
-        var p5 = Math.pow(10, logMedian - (z90 * sd));
-        var p95 = Math.pow(10, logMedian + (z90 * sd));
-        return { median: median, sd: sd, p5: p5, p95: p95, logMedian: logMedian };
-      }
-
-      // =========================================================================
-      // 預產期 (EDD) 自動換算懷孕週數 (Gestational Age Dating)
-      // 公式：以預產期當天為 40週+0天 (280天)，推算量測當日的確切週數與天數
-      // =========================================================================
-      function parseDateParts(dateStr) {
-        if (!dateStr) return null;
-        var s = String(dateStr).trim();
-        if (!s) return null;
-
-        var now = new Date();
-        var curYear = now.getFullYear();
-
-        // 1. 民國年格式：115/11/20 或 115-11-20
-        var mTw = s.match(/^(\d{2,3})[-/.\s](\d{1,2})[-/.\s](\d{1,2})$/);
-        if (mTw && parseInt(mTw[1], 10) < 1900) {
-          var yTw = parseInt(mTw[1], 10);
-          var fullYear = yTw > 50 ? (yTw + 1911) : (yTw + 2000);
-          return new Date(fullYear, parseInt(mTw[2], 10) - 1, parseInt(mTw[3], 10), 12, 0, 0);
-        }
-
-        // 2. 純 8 碼數字 YYYYMMDD (例如 20261120)
-        var m8 = s.match(/^(\d{4})(\d{2})(\d{2})$/);
-        if (m8) {
-          return new Date(parseInt(m8[1], 10), parseInt(m8[2], 10) - 1, parseInt(m8[3], 10), 12, 0, 0);
-        }
-
-        // 3. 常見完整日期 YYYY[-/. ]MM[-/. ]DD (例如 2026-11-20, 2026/11/20, 2026.11.20)
-        var m = s.match(/^(\d{4})[-/.\s](\d{1,2})[-/.\s](\d{1,2})/);
-        if (m) {
-          return new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10), 12, 0, 0);
-        }
-
-        // 4. 簡易月份/日期 MM/DD 或 MM-DD (省略年份，自動推估當年或次年)
-        var mShort = s.match(/^(\d{1,2})[-/.\s](\d{1,2})$/);
-        if (mShort) {
-          var mVal = parseInt(mShort[1], 10);
-          var dVal = parseInt(mShort[2], 10);
-          var targetYear = (mVal >= (now.getMonth() + 1)) ? curYear : (curYear + 1);
-          return new Date(targetYear, mVal - 1, dVal, 12, 0, 0);
-        }
-
-        // 5. 嘗試原生解析
-        var d = new Date(s);
-        if (!isNaN(d.getTime())) {
-          return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12, 0, 0);
-        }
-        return null;
-      }
-
-      function formatDateISO(d) {
-        if (!d) return '';
-        var y = d.getFullYear();
-        var m = String(d.getMonth() + 1).padStart(2, '0');
-        var day = String(d.getDate()).padStart(2, '0');
-        return y + '-' + m + '-' + day;
-      }
-
-      function syncGAFromEDD(showAlert) {
-        var eddInput = document.getElementById('input-patient-edd');
-        var timeInput = document.getElementById('input-measurement-time');
-        var badge = document.getElementById('ga-auto-badge');
-
-        var eddVal = eddInput ? eddInput.value.trim() : '';
-        if (!eddVal) {
-          if (badge) badge.classList.add('hidden');
-          if (showAlert) alert('請先在「預產期」輸入日期（例如 2026-11-20 或 11/20）！');
-          return false;
-        }
-
-        var eddDate = parseDateParts(eddVal);
-        if (!eddDate) {
-          if (badge) {
-            badge.textContent = '⚠️ 無法識別日期 (請輸入例如 2026-11-20)';
-            badge.classList.remove('hidden');
-          }
-          if (showAlert) alert('無法識別預產期格式，請輸入例如：\n2026-11-20、2026/11/20 或 11/20');
-          return false;
-        }
-
-        // 量測時間若空，以今天為準
-        var measureVal = timeInput ? timeInput.value.trim() : '';
-        var measureDate = parseDateParts(measureVal);
-        if (!measureDate) {
-          measureDate = new Date();
-          measureDate.setHours(12, 0, 0, 0);
-          updateAutoTime(true);
-        }
-
-        var msPerDay = 24 * 60 * 60 * 1000;
-        var diffDays = Math.round((eddDate.getTime() - measureDate.getTime()) / msPerDay);
-        var gaDays = 280 - diffDays;
-
-        if (gaDays >= 28 && gaDays <= 315) { // 支援 4週 至 45週 全面覆蓋
-          var weeks = Math.floor(gaDays / 7);
-          var days = gaDays % 7;
-          var wInput = document.getElementById('input-ga-weeks');
-          var dInput = document.getElementById('input-ga-days');
-          if (wInput) wInput.value = weeks;
-          if (dInput) dInput.value = days;
-          if (badge) {
-            badge.textContent = '⚡ 由預產期推算：' + weeks + '週+' + days + '天';
-            badge.classList.remove('hidden');
-          }
-          if (showAlert) {
-            alert('✓ 換算成功！\n\n預產期：' + formatDateISO(eddDate) + '\n量測日：' + formatDateISO(measureDate) + '\n\n換算懷孕週數：' + weeks + ' 週 + ' + days + ' 天\n（CPR 數值與百分位數已同步更新）');
-          }
-          return true;
-        } else {
-          var wApprox = Math.floor(gaDays / 7);
-          if (badge) {
-            badge.textContent = '⚠️ 推算週數為 ' + wApprox + ' 週 (超出合理範圍)';
-            badge.classList.remove('hidden');
-          }
-          if (showAlert) {
-            alert('換算結果為 ' + wApprox + ' 週，已超出合理懷孕範圍，請檢查預產期年份或量測日期是否正確！');
-          }
-          return false;
-        }
-      }
-
-      function syncEDDFromGA() {
-        var wInput = document.getElementById('input-ga-weeks');
-        var dInput = document.getElementById('input-ga-days');
-        var timeInput = document.getElementById('input-measurement-time');
-        var eddInput = document.getElementById('input-patient-edd');
-        var badge = document.getElementById('ga-auto-badge');
-
-        var w = parseInt(wInput ? wInput.value : 0, 10);
-        var d = parseInt(dInput ? dInput.value : 0, 10);
-        if (isNaN(w) || w < 10) return;
-        if (isNaN(d)) d = 0;
-
-        var measureDate = parseDateParts(timeInput ? timeInput.value : '');
-        if (!measureDate) return;
-
-        var gaDays = (w * 7) + d;
-        var remDays = 280 - gaDays;
-        var eddTime = measureDate.getTime() + (remDays * 24 * 60 * 60 * 1000);
-        var eddDate = new Date(eddTime);
-
-        var y = eddDate.getFullYear();
-        var m = String(eddDate.getMonth() + 1).padStart(2, '0');
-        var day = String(eddDate.getDate()).padStart(2, '0');
-        var eddStr = y + '-' + m + '-' + day;
-
-        if (eddInput) eddInput.value = eddStr;
-        if (badge) {
-          badge.textContent = '⚡ 依 ' + w + '+' + d + 'w 反推預產期 ' + eddStr;
-          badge.classList.remove('hidden');
-        }
-      }
-
-      var currentCalc = {
-        weeks: 28,
-        days: 4,
-        gaDecimal: 28.57,
-        mcaPI: 1.79,
-        umaPI: 0.88,
-        cpr: 2.03,
-        centile: 80.5,
-        isAbnormal: false
-      };
-
-      var activeMRN = '';
-
-      function updateAutoTime(force) {
-        var now = new Date();
-        var str = now.getFullYear() + '-' +
-          String(now.getMonth() + 1).padStart(2, '0') + '-' +
-          String(now.getDate()).padStart(2, '0') + ' ' +
-          String(now.getHours()).padStart(2, '0') + ':' +
-          String(now.getMinutes()).padStart(2, '0');
-        var el = document.getElementById('input-measurement-time');
-        if (el && (force || !el.value)) {
-          el.value = str;
-        }
-        return el ? el.value : str;
-      }
-
-      function recalculate() {
-        var mrnInput = document.getElementById('input-patient-mrn');
-        activeMRN = mrnInput ? mrnInput.value.trim().toUpperCase() : '';
-
-        var w = parseInt(document.getElementById('input-ga-weeks').value, 10);
-        var d = parseInt(document.getElementById('input-ga-days').value, 10);
-        var mca = parseFloat(document.getElementById('input-mca-pi').value);
-        var uma = parseFloat(document.getElementById('input-uma-pi').value);
-
-        if (isNaN(w) || w < 20 || w > 42) w = 28;
-        if (isNaN(d) || d < 0 || d > 6) d = 0;
-        if (isNaN(mca) || mca <= 0) mca = 1.0;
-        if (isNaN(uma) || uma <= 0) uma = 1.0;
-
-        var gaDays = (w * 7) + d;
-        var gaDec = w + (d / 7);
-        var cpr = mca / uma;
-
-        var ref = getFMFCPRReference(gaDays);
-        var z = (Math.log10(cpr) - ref.logMedian) / ref.sd;
-        var centile = normalCDF(z) * 100.0;
-        var isAbnormal = centile < 5.0;
-
-        currentCalc.weeks = w;
-        currentCalc.days = d;
-        currentCalc.gaDecimal = gaDec;
-        currentCalc.mcaPI = mca;
-        currentCalc.umaPI = uma;
-        currentCalc.cpr = cpr;
-        currentCalc.centile = centile;
-        currentCalc.isAbnormal = isAbnormal;
-
-        document.getElementById('display-cpr-num').textContent = cpr.toFixed(2);
-        var pText = centile < 1.0 ? '< 1%' : (centile > 99.0 ? '> 99%' : centile.toFixed(1) + '%');
-        document.getElementById('display-cpr-centile').textContent = pText;
-
-        var badge = document.getElementById('display-cpr-status-badge');
-        if (isAbnormal) {
-          badge.className = 'ios-badge badge-abnormal';
-          badge.textContent = '⚠️ 異常 (< 第 5 百分位)';
-        } else {
-          badge.className = 'ios-badge badge-normal';
-          badge.textContent = '✓ 正常 (≥ 第 5 百分位)';
-        }
-
-        updatePatientStateAndTrend();
-      }
-
-      // =========================================================================
-      // 修正核心：只有當「同一個病患真的有 2 次以上已儲存紀錄」或「在同一病患下輸入第二次新測量」才對比！
-      // 絕不將另一個病人的殘留數值拿來與當前病人對比！
-      // =========================================================================
-      function updatePatientStateAndTrend() {
-        var navIndicator = document.getElementById('nav-patient-indicator');
-        var trendBadge = document.getElementById('display-trend-badge');
-        var listMount = document.getElementById('history-list-mount');
-        var historyTitle = document.getElementById('history-header-title');
-
-        if (!activeMRN) {
-          navIndicator.textContent = '未指定病歷號（獨立檢測）';
-          navIndicator.className = 'nav-patient-indicator text-muted';
-          trendBadge.className = 'trend-badge badge-stable';
-          trendBadge.textContent = '新病患紀錄';
-          historyTitle.textContent = '📅 追蹤歷程 (未建檔)';
-          listMount.innerHTML = '<div class="history-empty">請輸入病歷號建立專屬檔案，或點「儲存」自動歸檔。</div>';
-          return;
-        }
-
-        navIndicator.textContent = '現正檢視病歷號：[' + activeMRN + ']';
-        navIndicator.className = 'nav-patient-indicator text-active';
-
-        var records = DB.getRecords(activeMRN);
-        historyTitle.textContent = '📅 [' + activeMRN + '] 追蹤歷程 (' + records.length + ' 次測量)';
-
-        if (records.length === 0) {
-          // 全新病患：無任何歷史紀錄，絕不可對比！
-          trendBadge.className = 'trend-badge badge-stable';
-          trendBadge.textContent = '新病患（無對比）';
-          listMount.innerHTML = '<div class="history-empty">病歷號 [' + activeMRN + '] 尚無歷史紀錄。點擊下方儲存為第 1 次測量。</div>';
-        } else if (records.length === 1) {
-          // 重要修正：該病患在資料庫中只有 1 次紀錄！
-          // 檢查目前輸入框是否正好就是該次已存紀錄（週數與CPR一致）
-          var singleRec = records[0];
-          var isSameAsSaved = Math.abs(currentCalc.gaDecimal - singleRec.gaDecimal) < 0.1 && Math.abs(currentCalc.cpr - singleRec.cpr) < 0.05;
-
-          if (isSameAsSaved) {
-            // 正好檢視該筆已存紀錄：僅有 1 次量測，無法對比！
-            trendBadge.className = 'trend-badge badge-stable';
-            trendBadge.textContent = '第 1 次基線量測（無前次）';
-          } else {
-            // 醫師正在為此病患輸入「全新的第 2 次測量」：明確標示為「預覽第 2 次 vs 第 1 次」！
-            var deltaP = currentCalc.centile - singleRec.centile;
-            var sign = deltaP >= 0 ? '+' : '';
-            trendBadge.className = deltaP < -15 ? 'trend-badge badge-warning' : 'trend-badge badge-up';
-            trendBadge.textContent = '預覽新測量 vs 第1次(' + singleRec.weeks + 'w)：' + sign + deltaP.toFixed(0) + '%';
-          }
-          renderHistoryList(records);
-        } else {
-          // 該病患有 2 次或以上已存紀錄：比對該病患最近兩次已存紀錄！
-          var lastRec = records[records.length - 1];
-          var prevRec = records[records.length - 2];
-          var deltaP = lastRec.centile - prevRec.centile;
-
-          if (deltaP <= -20.0) {
-            trendBadge.className = 'trend-badge badge-danger';
-            trendBadge.textContent = '⚠️ 第' + records.length + '次 vs 第' + (records.length-1) + '次：急降 ' + deltaP.toFixed(0) + '%';
-          } else if (deltaP < -10.0) {
-            trendBadge.className = 'trend-badge badge-warning';
-            trendBadge.textContent = '📉 第' + records.length + '次 vs 第' + (records.length-1) + '次：下降 ' + deltaP.toFixed(0) + '%';
-          } else if (deltaP > 10.0) {
-            trendBadge.className = 'trend-badge badge-up';
-            trendBadge.textContent = '📈 第' + records.length + '次 vs 第' + (records.length-1) + '次：上升 +' + deltaP.toFixed(0) + '%';
-          } else {
-            trendBadge.className = 'trend-badge badge-stable';
-            trendBadge.textContent = '第' + records.length + '次 vs 第' + (records.length-1) + '次：平穩 (' + (deltaP >= 0 ? '+' : '') + deltaP.toFixed(0) + '%)';
-          }
-          renderHistoryList(records);
-        }
-
-        updateRecentPatientsDropdown();
-      }
-
-      function renderHistoryList(records) {
-        var listMount = document.getElementById('history-list-mount');
-        var html = '';
-        var rev = records.slice().reverse();
-        for (var i = 0; i < rev.length; i++) {
-          var r = rev[i];
-          var idx = records.length - i;
-          var isAb = r.centile < 5.0;
-          html += '<div class="history-item">' +
-            '<div class="history-item-left">' +
-              '<span class="history-badge ' + (isAb ? 'badge-abnormal' : 'badge-normal') + '">第 ' + idx + ' 次</span>' +
-              '<span class="history-ga">' + r.weeks + '+' + r.days + ' 週 (' + r.gaDecimal.toFixed(1) + 'w)</span>' +
-              '<span class="history-time">' + r.timestamp + '</span>' +
-            '</div>' +
-            '<div class="history-item-right">' +
-              '<span class="history-cpr">CPR <b>' + r.cpr.toFixed(2) + '</b></span>' +
-              '<span class="history-centile ' + (isAb ? 'text-rose' : 'text-emerald') + '">' + r.centile.toFixed(1) + '%</span>' +
-              '<button type="button" class="btn-del-rec" data-id="' + r.id + '" title="刪除此筆">✕</button>' +
-            '</div>' +
-          '</div>';
-        }
-        listMount.innerHTML = html;
-
-        var delBtns = listMount.querySelectorAll('.btn-del-rec');
-        delBtns.forEach(function (btn) {
-          btn.addEventListener('click', function (e) {
-            e.stopPropagation();
-            var rid = btn.dataset.id;
-            if (confirm('確定要刪除病歷 [' + activeMRN + '] 的此筆紀錄嗎？')) {
-              DB.delete(activeMRN, rid);
-              recalculate();
-              renderLandscapeChart();
-            }
-          });
-        });
-      }
-
-      function updateRecentPatientsDropdown() {
-        var sel = document.getElementById('select-recent-patients');
-        if (!sel) return;
-        var patients = DB.listPatients();
-        var current = sel.value;
-        var opts = '<option value="">📂 載入既有病歷檔案 (' + patients.length + ' 位)...</option>';
-        patients.forEach(function (p) {
-          opts += '<option value="' + p.mrn + '">病歷: ' + p.mrn + ' (' + p.count + ' 次量測)</option>';
-        });
-        sel.innerHTML = opts;
-        if (current) sel.value = current;
-      }
-
-      // 點擊切換病患時：嚴格載入「該病患實際紀錄」，絕不保留上一位病人的殘留數值！
-      function loadPatientData(mrn) {
-        if (!mrn) return;
-        activeMRN = mrn.trim().toUpperCase();
-        document.getElementById('input-patient-mrn').value = activeMRN;
-
-        var p = DB.getPatient(activeMRN);
-        if (p && p.edd) {
-          document.getElementById('input-patient-edd').value = p.edd;
-        } else {
-          document.getElementById('input-patient-edd').value = '';
-        }
-
-        var records = DB.getRecords(activeMRN);
-        if (records.length > 0) {
-          // 載入該病患的最新一次紀錄填入輸入框！
-          var latest = records[records.length - 1];
-          document.getElementById('input-ga-weeks').value = latest.weeks;
-          document.getElementById('input-ga-days').value = latest.days;
-          document.getElementById('input-mca-pi').value = latest.mcaPI;
-          document.getElementById('input-uma-pi').value = latest.umaPI;
-          if (latest.timestamp) {
-            document.getElementById('input-measurement-time').value = latest.timestamp;
-          }
-        }
-        syncGAFromEDD();
-        recalculate();
-      }
-
-      function startNewPatient() {
-        document.getElementById('input-patient-mrn').value = '';
-        document.getElementById('input-patient-edd').value = '';
-        document.getElementById('select-recent-patients').value = '';
-        activeMRN = '';
-        // 重置為乾淨初始值
-        document.getElementById('input-ga-weeks').value = 28;
-        document.getElementById('input-ga-days').value = 0;
-        document.getElementById('input-mca-pi').value = 1.75;
-        document.getElementById('input-uma-pi').value = 0.85;
-        var badge = document.getElementById('ga-auto-badge');
-        if (badge) badge.classList.add('hidden');
-        updateAutoTime(true);
-        recalculate();
-        document.getElementById('input-patient-mrn').focus();
-      }
-
-      // =========================================================================
-      // 橫屏全螢幕趨勢折線圖 (Strict Single-Patient Trajectory)
-      // =========================================================================
-      function renderLandscapeChart(scrubGA) {
-        var container = document.getElementById('landscape-chart-mount');
-        if (!container) return;
-
-        var rect = container.getBoundingClientRect();
-        var width = Math.max(rect.width || 740, 640);
-        var height = Math.max(rect.height || 380, 320);
-
-        var padding = { top: 25, right: 40, bottom: 35, left: 45 };
-        var plotW = width - padding.left - padding.right;
-        var plotH = height - padding.top - padding.bottom;
-
-        var minX = 20;
-        var maxX = 42;
-        var minY = 0.4;
-        var maxY = 3.0;
-
-        // 僅取得「當前這一位病患」的已存歷史紀錄
-        var savedRecords = activeMRN ? DB.getRecords(activeMRN) : [];
-        var allPoints = savedRecords.slice();
-
-        // 若輸入框中的測量與已存紀錄不同，才作為待儲存預覽點加入
-        var isCurrentAlreadySaved = savedRecords.some(function (r) {
-          return Math.abs(r.gaDecimal - currentCalc.gaDecimal) < 0.1 && Math.abs(r.cpr - currentCalc.cpr) < 0.05;
-        });
-
-        if (!isCurrentAlreadySaved && activeMRN) {
-          allPoints.push({
-            gaDecimal: currentCalc.gaDecimal,
-            cpr: currentCalc.cpr,
-            centile: currentCalc.centile,
-            isAbnormal: currentCalc.isAbnormal,
-            isCurrentPreview: true,
-            weeks: currentCalc.weeks,
-            days: currentCalc.days,
-            timestamp: '待儲存新測量'
-          });
-          allPoints.sort(function (a, b) { return a.gaDecimal - b.gaDecimal; });
-        } else if (allPoints.length === 0) {
-          // 未儲存過任何紀錄的新病患：僅單一點
-          allPoints.push({
-            gaDecimal: currentCalc.gaDecimal,
-            cpr: currentCalc.cpr,
-            centile: currentCalc.centile,
-            isAbnormal: currentCalc.isAbnormal,
-            weeks: currentCalc.weeks,
-            days: currentCalc.days,
-            timestamp: '當前實測'
-          });
-        }
-
-        allPoints.forEach(function (pt) {
-          if (pt.cpr > maxY) maxY = Math.ceil(pt.cpr * 1.15 * 10) / 10;
-        });
-
-        function sx(x) { return padding.left + ((x - minX) / (maxX - minX)) * plotW; }
-        function sy(y) { return padding.top + plotH - ((y - minY) / (maxY - minY)) * plotH; }
-        function invX(px) { return minX + ((px - padding.left) / plotW) * (maxX - minX); }
-
-        var refPoints = [];
-        for (var ga = 20.0; ga <= 42.0; ga += 0.5) {
-          var ref = getFMFCPRReference(ga * 7);
-          refPoints.push({ ga: ga, p5: ref.p5, p50: ref.median, p95: ref.p95 });
-        }
-
-        var path50 = refPoints.map(function (d, i) { return (i === 0 ? 'M' : 'L') + ' ' + sx(d.ga).toFixed(1) + ' ' + sy(d.p50).toFixed(1); }).join(' ');
-        var path95 = refPoints.map(function (d, i) { return (i === 0 ? 'M' : 'L') + ' ' + sx(d.ga).toFixed(1) + ' ' + sy(d.p95).toFixed(1); }).join(' ');
-        var path5 = refPoints.map(function (d, i) { return (i === 0 ? 'M' : 'L') + ' ' + sx(d.ga).toFixed(1) + ' ' + sy(d.p5).toFixed(1); }).join(' ');
-        var forward95 = path95;
-        var backward5 = refPoints.slice().reverse().map(function (d) { return 'L ' + sx(d.ga).toFixed(1) + ' ' + sy(d.p5).toFixed(1); }).join(' ');
-        var shadedBand = forward95 + ' ' + backward5 + ' Z';
-
-        var gridX = '';
-        for (var w = 20; w <= 42; w += 2) {
-          var gx = sx(w);
-          gridX += '<line x1="' + gx + '" y1="' + padding.top + '" x2="' + gx + '" y2="' + (padding.top + plotH) + '" stroke="#1e293b" stroke-width="1" stroke-dasharray="2,2"/>' +
-                   '<text x="' + gx + '" y="' + (padding.top + plotH + 18) + '" font-size="11" fill="#64748b" text-anchor="middle">' + w + 'w</text>';
-        }
-
-        var gridY = '';
-        for (var yVal = 0.5; yVal <= maxY + 0.001; yVal += 0.5) {
-          var gy = sy(yVal);
-          gridY += '<line x1="' + padding.left + '" y1="' + gy + '" x2="' + (padding.left + plotW) + '" y2="' + gy + '" stroke="#1e293b" stroke-width="1" stroke-dasharray="2,2"/>' +
-                   '<text x="' + (padding.left - 8) + '" y="' + (gy + 4) + '" font-size="11" fill="#64748b" text-anchor="end">' + yVal.toFixed(1) + '</text>';
-        }
-
-        // 僅在「該同一病患真正有 2 次以上紀錄」時繪製折線！
-        var trajectoryPath = '';
-        var trajectoryGlow = '';
-        var trajectoryMarkers = '';
-
-        if (allPoints.length >= 2 && activeMRN) {
-          var pathCommands = allPoints.map(function (pt, idx) {
-            var px = sx(pt.gaDecimal).toFixed(1);
-            var py = sy(pt.cpr).toFixed(1);
-            return (idx === 0 ? 'M' : 'L') + ' ' + px + ' ' + py;
-          }).join(' ');
-
-          trajectoryGlow = '<path d="' + pathCommands + '" fill="none" stroke="#38bdf8" stroke-width="6" opacity="0.25" stroke-linecap="round" stroke-linejoin="round"/>';
-          trajectoryPath = '<path d="' + pathCommands + '" fill="none" stroke="#38bdf8" stroke-width="2.5" stroke-dasharray="4,2" stroke-linecap="round" stroke-linejoin="round"/>';
-        }
-
-        allPoints.forEach(function (pt, idx) {
-          var px = sx(pt.gaDecimal);
-          var py = sy(pt.cpr);
-          var isAb = pt.centile < 5.0;
-          var ptColor = isAb ? '#ff453a' : '#30d158';
-          var isCur = !!pt.isCurrentPreview;
-          var nodeLabel = (allPoints.length > 1 && activeMRN) ? ('第' + (idx + 1) + '次 (' + pt.weeks + 'w)') : (pt.weeks + 'w 實測');
-
-          trajectoryMarkers +=
-            '<g class="trajectory-node">' +
-              '<circle cx="' + px + '" cy="' + py + '" r="' + (isCur ? '8' : '6') + '" fill="' + ptColor + '" stroke="#ffffff" stroke-width="2"/>' +
-              '<text x="' + px + '" y="' + (py - 12) + '" font-size="10" font-weight="700" fill="#ffffff" text-anchor="middle">' +
-                nodeLabel +
-              '</text>' +
-            '</g>';
-        });
-
-        var scrubberMarkup = '';
-        if (typeof scrubGA === 'number' && scrubGA >= minX && scrubGA <= maxX) {
-          var sX = sx(scrubGA);
-          var sRef = getFMFCPRReference(scrubGA * 7);
-          scrubberMarkup = '<line x1="' + sX + '" y1="' + padding.top + '" x2="' + sX + '" y2="' + (padding.top + plotH) + '" stroke="#38bdf8" stroke-width="1.5"/>' +
-                           '<circle cx="' + sX + '" cy="' + sy(sRef.median) + '" r="4" fill="#38bdf8" stroke="#ffffff"/>' +
-                           '<circle cx="' + sX + '" cy="' + sy(sRef.p5) + '" r="4" fill="#ff453a" stroke="#ffffff"/>';
-
-          document.getElementById('ls-trend-text').innerHTML =
-            '探針：<b>' + scrubGA.toFixed(1) + '週</b> ｜ 中位數: <b>' + sRef.median.toFixed(2) + '</b> ｜ 5th門檻: <b class="text-rose-400">' + sRef.p5.toFixed(2) + '</b>';
-        } else {
-          if (allPoints.length >= 2 && activeMRN) {
-            var first = allPoints[0];
-            var last = allPoints[allPoints.length - 1];
-            var diffP = last.centile - first.centile;
-            var isDrop = diffP < -15;
-            document.getElementById('ls-trend-text').innerHTML =
-              '📈 [' + activeMRN + '] 縱向追蹤：' + first.weeks + 'w ➔ ' + last.weeks + 'w ' +
-              (isDrop ? '<span class="text-rose-400 font-bold">(⚠️ 百分位自 ' + first.centile.toFixed(0) + '% 降至 ' + last.centile.toFixed(0) + '%)</span>'
-                      : '<span class="text-emerald-400 font-bold">(百分位維持穩定)</span>');
-          } else if (activeMRN) {
-            document.getElementById('ls-trend-text').textContent = '病歷號 [' + activeMRN + '] 僅 1 次測量落點（尚未有縱向折線）';
-          } else {
-            document.getElementById('ls-trend-text').textContent = '新病患獨立測量落點';
-          }
-        }
-
-        document.getElementById('ls-patient-summary').textContent =
-          activeMRN ? ('病歷號: [' + activeMRN + '] · 累積 ' + savedRecords.length + ' 次測量') : '新病患 · 單次實測落點';
-        document.getElementById('ls-status-dot').className =
-          currentCalc.isAbnormal ? 'ls-dot-indicator dot-abnormal' : 'ls-dot-indicator dot-normal';
-
-        container.innerHTML = '<svg id="interactive-svg" viewBox="0 0 ' + width + ' ' + height + '" class="ls-svg" preserveAspectRatio="xMidYMid meet">' +
-          '<rect x="' + padding.left + '" y="' + padding.top + '" width="' + plotW + '" height="' + plotH + '" fill="#090d16" rx="6"/>' +
-          gridX +
-          gridY +
-          '<path d="' + shadedBand + '" fill="#0284c7" opacity="0.25"/>' +
-          '<path d="' + path95 + '" fill="none" stroke="#64748b" stroke-width="1.5" stroke-dasharray="4,4"/>' +
-          '<path d="' + path50 + '" fill="none" stroke="#38bdf8" stroke-width="2"/>' +
-          '<path d="' + path5 + '" fill="none" stroke="#ff453a" stroke-width="2"/>' +
-          trajectoryGlow +
-          trajectoryPath +
-          trajectoryMarkers +
-          scrubberMarkup +
-          '<text x="' + (padding.left + plotW / 2) + '" y="' + (height - 6) + '" font-size="11" font-weight="600" fill="#94a3b8" text-anchor="middle">懷孕週數 (Gestational Age, weeks)</text>' +
-          '<text transform="rotate(-90)" x="' + (-(padding.top + plotH / 2)) + '" y="14" font-size="11" font-weight="600" fill="#94a3b8" text-anchor="middle">CPR 數值</text>' +
-        '</svg>';
-
-        var svgEl = document.getElementById('interactive-svg');
-        if (svgEl) {
-          function handlePointer(evt) {
-            var clientX = evt.touches ? evt.touches[0].clientX : evt.clientX;
-            var cRect = svgEl.getBoundingClientRect();
-            var relX = (clientX - cRect.left) * (width / cRect.width);
-            if (relX >= padding.left && relX <= padding.left + plotW) {
-              renderLandscapeChart(invX(relX));
-            }
-          }
-          svgEl.addEventListener('mousemove', handlePointer);
-          svgEl.addEventListener('touchmove', handlePointer, { passive: true });
-        }
-      }
-
-      function setMode(isLandscape) {
-        if (isLandscape) {
-          document.body.classList.remove('mode-portrait');
-          document.body.classList.add('mode-landscape');
-          setTimeout(function() { renderLandscapeChart(); }, 60);
-        } else {
-          document.body.classList.remove('mode-landscape');
-          document.body.classList.add('mode-portrait');
-        }
-      }
-
-      var inputSequence = ['input-patient-mrn', 'input-ga-weeks', 'input-ga-days', 'input-mca-pi', 'input-uma-pi'];
-      var labels = {
-        'input-patient-mrn': '病歷號',
-        'input-ga-weeks': '懷孕週數 (週)',
-        'input-ga-days': '懷孕週數 (天)',
-        'input-mca-pi': 'MCA PI',
-        'input-uma-pi': 'UmA PI'
-      };
-
-      function dismissKeyboard() {
-        if (document.activeElement && document.activeElement.blur) {
-          document.activeElement.blur();
-        }
-        var toolbar = document.getElementById('ios-kb-toolbar');
-        if (toolbar) toolbar.classList.add('hidden');
-      }
-
-      function moveToNextInput() {
-        var activeId = document.activeElement ? document.activeElement.id : null;
-        var idx = inputSequence.indexOf(activeId);
-        if (idx !== -1 && idx < inputSequence.length - 1) {
-          var nextEl = document.getElementById(inputSequence[idx + 1]);
-          if (nextEl) {
-            nextEl.focus();
-            if (nextEl.select) nextEl.select();
-            return;
-          }
-        }
-        dismissKeyboard();
-      }
-
-      function showKeyboardToolbar(inputId) {
-        var toolbar = document.getElementById('ios-kb-toolbar');
-        var labelEl = document.getElementById('kb-current-label');
-        if (toolbar && labelEl) {
-          labelEl.textContent = labels[inputId] || '輸入中...';
-          toolbar.classList.remove('hidden');
-        }
-      }
-
-      function attachEvents() {
-        inputSequence.forEach(function (id) {
-          var el = document.getElementById(id);
-          if (el) {
-            el.addEventListener('input', recalculate);
-            el.addEventListener('change', recalculate);
-            el.addEventListener('focus', function () { showKeyboardToolbar(id); });
-            el.addEventListener('keydown', function (e) {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                moveToNextInput();
-              }
-            });
-          }
-        });
-
-        document.getElementById('btn-kb-done')?.addEventListener('click', function (e) {
-          e.preventDefault();
-          dismissKeyboard();
-        });
-
-        document.getElementById('btn-kb-next')?.addEventListener('click', function (e) {
-          e.preventDefault();
-          moveToNextInput();
-        });
-
-        document.addEventListener('click', function (e) {
-          if (!e.target.closest('input, select, button, .ios-kb-toolbar')) {
-            dismissKeyboard();
-          }
-        });
-        document.addEventListener('touchstart', function (e) {
-          if (!e.target.closest('input, select, button, .ios-kb-toolbar')) {
-            dismissKeyboard();
-          }
-        }, { passive: true });
-
-        // ➕ 新病人按鈕 (清空病歷號與欄位)
-        document.getElementById('btn-new-patient')?.addEventListener('click', function () {
-          startNewPatient();
-        });
-
-        // 載入既有病患：自動填入該病患歷史數值，絕不混入其他病人的殘留數值！
-        document.getElementById('select-recent-patients')?.addEventListener('change', function (e) {
-          if (e.target.value) {
-            loadPatientData(e.target.value);
-          }
-        });
-
-        // 儲存本次量測按鈕
-        document.getElementById('btn-save-measurement')?.addEventListener('click', function () {
-          dismissKeyboard();
-          var mrnField = document.getElementById('input-patient-mrn');
-          var enteredMRN = mrnField ? mrnField.value.trim().toUpperCase() : '';
-          if (!enteredMRN) {
-            enteredMRN = prompt('請輸入此病患之病歷號 (MRN)：');
-            if (!enteredMRN || !enteredMRN.trim()) {
-              alert('未輸入病歷號，未儲存紀錄。');
-              return;
-            }
-            enteredMRN = enteredMRN.trim().toUpperCase();
-            if (mrnField) mrnField.value = enteredMRN;
-          }
-
-          var eddVal = (document.getElementById('input-patient-edd')?.value || '').trim();
-          var timeStr = (document.getElementById('input-measurement-time')?.value || '').trim() || updateAutoTime(true);
-          var updated = DB.save(enteredMRN, {
-            weeks: currentCalc.weeks,
-            days: currentCalc.days,
-            gaDecimal: currentCalc.gaDecimal,
-            mcaPI: currentCalc.mcaPI,
-            umaPI: currentCalc.umaPI,
-            cpr: currentCalc.cpr,
-            centile: currentCalc.centile,
-            isAbnormal: currentCalc.isAbnormal,
-            timestamp: timeStr
-          }, eddVal);
-
-          alert('✓ 已成功儲存至病歷號 [' + enteredMRN + ']！\n該病患當前累積 ' + updated.length + ' 次追蹤測量。');
-          recalculate();
-          renderLandscapeChart();
-        });
-
-        function handleDateSync(showAlert) {
-          var ok = syncGAFromEDD(showAlert);
-          if (ok) {
-            recalculate();
-          }
-        }
-        document.getElementById('btn-calc-ga')?.addEventListener('click', function() {
-          handleDateSync(true);
-        });
-        ['input', 'change', 'keyup', 'paste'].forEach(function(evtName) {
-          document.getElementById('input-patient-edd')?.addEventListener(evtName, function() {
-            handleDateSync(false);
-          });
-          document.getElementById('input-measurement-time')?.addEventListener(evtName, function() {
-            handleDateSync(false);
-          });
-        });
-
-        document.getElementById('btn-toggle-to-chart')?.addEventListener('click', function() {
-          dismissKeyboard();
-          setMode(true);
-        });
-        document.getElementById('btn-back-to-input')?.addEventListener('click', function() {
-          setMode(false);
-        });
-
-        window.addEventListener('resize', function () {
-          var isLandscape = window.innerWidth > window.innerHeight;
-          setMode(isLandscape);
-        });
-
-        document.getElementById('btn-now-time')?.addEventListener('click', function () {
-          updateAutoTime(true);
-          handleDateSync();
-        });
-
-        updateAutoTime(true);
-        syncGAFromEDD();
-        recalculate();
-      }
-
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', attachEvents);
-      } else {
-        attachEvents();
-      }
-    })();
-  </script>
+  <!-- 獨立自包含腳本 (免除 file:// 協定下的 WebKit CORS 限制，保證按鈕與事件 100% 響應) -->
+  <script src="app.bundle.js"></script>
 </body>
 </html>

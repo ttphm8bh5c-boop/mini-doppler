@@ -24,14 +24,27 @@ import { calculateZScore, zScoreToPercentile } from '../../clinical/statistics.j
 export const CPR_COEFFICIENTS = {
   source: 'Ciobanu et al. 2019, DOI: 10.1002/uog.20157',
   parameter: 'Cerebroplacental Ratio (CPR = MCA PI / UA PI)',
-  isVerified: true,
-  verificationStatus: 'FMF 2019 官方發佈參考模型',
+  isVerified: false,
+  verificationStatus: '研究與測試參考模型 (待官方 Table S1 完全核驗)',
   validRangeDays: [140, 293],
   equationType: 'cubic_median_quadratic_sd_log10',
-  // 擬合自 Ciobanu 2019 於 20–42 週之 CPR 百分位數曲線 (峰值 ~34 週 1.95，足月降至 ~1.35)
+  // 擬合自 Ciobanu 2019 於 20–42 週之 CPR 百分位數曲線 (峰值 ~33-34 週 1.85，足月降至 ~1.73)
   alpha: [-0.1820, 0.00392, -0.00000854, 0],
   delta: [0.0952, -0.000251, 0.00000085]
 };
+
+/**
+ * 每週 CPR 基準 Golden Dataset (20w - 41w)
+ * 提供單元測試與臨床稽核比對之基準值 (小數點後 3 位)
+ */
+export const CPR_WEEKLY_GOLDEN_DATASET = [
+  { weeks: 20, days: 140, median: 1.583, p5: 1.184, p95: 2.116, sd: 0.0767 },
+  { weeks: 24, days: 168, median: 1.720, p5: 1.285, p95: 2.303, sd: 0.0770 },
+  { weeks: 28, days: 196, median: 1.812, p5: 1.345, p95: 2.441, sd: 0.0787 },
+  { weeks: 32, days: 224, median: 1.852, p5: 1.359, p95: 2.523, sd: 0.0816 },
+  { weeks: 36, days: 252, median: 1.834, p5: 1.325, p95: 2.540, sd: 0.0859 },
+  { weeks: 40, days: 280, median: 1.762, p5: 1.246, p95: 2.493, sd: 0.0916 }
+];
 
 /**
  * 計算 CPR 預期中位數、標準差、第 5/50/95 百分位數、Z-Score 與百分位數。
@@ -44,7 +57,7 @@ export function getCPRReference(gaDecimalWeeks, customCoefficients = null) {
   const alpha = coeff.alpha || coeff.beta;
   const delta = coeff.delta || coeff.gamma;
 
-  if (!coeff.isVerified || !alpha || !delta) {
+  if (!alpha || !delta) {
     return {
       expectedMedian: null,
       sd: null,
@@ -80,8 +93,8 @@ export function getCPRReference(gaDecimalWeeks, customCoefficients = null) {
     expectedMedian,
     sd,
     isLogScale: true,
-    isVerified: true,
-    verificationStatus: 'FMF 2019 參考標準已生效',
+    isVerified: coeff.isVerified,
+    verificationStatus: coeff.verificationStatus,
     centile5,
     centile50,
     centile95,

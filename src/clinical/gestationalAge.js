@@ -134,3 +134,147 @@ export function validateGestationalAge(weeksInput, daysInput = 0) {
     totalDays
   };
 }
+
+/**
+ * 檢查西曆年份是否為閏年
+ * @param {number} year
+ * @returns {boolean}
+ */
+export function isLeapYear(year) {
+  return (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+}
+
+/**
+ * 嚴格驗證西曆日期真實性（徹底攔截 2月30日、4月31日等不存在日期）
+ * @param {number} year
+ * @param {number} month - 1 至 12
+ * @param {number} day - 1 至 31
+ * @returns {boolean}
+ */
+export function validateCalendarDate(year, month, day) {
+  const y = Number(year);
+  const m = Number(month);
+  const d = Number(day);
+  if (!Number.isInteger(y) || !Number.isInteger(m) || !Number.isInteger(d)) return false;
+  if (y < 1900 || y > 2100) return false;
+  if (m < 1 || m > 12) return false;
+  if (d < 1 || d > 31) return false;
+
+  const daysInMonth = [31, (isLeapYear(y) ? 29 : 28), 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  return d <= daysInMonth[m - 1];
+}
+
+/**
+ * 嚴格解析日期字串，支援常見臨床日期格式並阻擋任何不存在之日期（如 2月30日）
+ * 支援格式：
+ * - 西曆完整：YYYY-MM-DD, YYYY/MM/DD, YYYY.MM.DD
+ * - 8 碼純數字：YYYYMMDD (如 20261120)
+ * - 簡易月日：MM/DD, MM-DD (如 11/20，依參考年份自動推算)
+ * - 民國年格式：YYY/MM/DD, YYY-MM-DD (如 115/11/20)
+ * @param {string} dateStr
+ * @param {Date} [referenceDate]
+ * @returns {Date|null}
+ */
+export function parseStrictDate(dateStr, referenceDate = null) {
+  if (!dateStr || typeof dateStr !== 'string') return null;
+  const s = dateStr.trim();
+  if (!s) return null;
+
+  const now = referenceDate instanceof Date ? referenceDate : new Date();
+  const curYear = now.getFullYear();
+  const curMonth = now.getMonth() + 1;
+
+  // 1. 民國年格式：115/11/20 或 115-11-20
+  const mTw = s.match(/^(\d{2,3})[-/.](\d{1,2})[-/.](\d{1,2})$/);
+  if (mTw && parseInt(mTw[1], 10) < 1900) {
+    const yTw = parseInt(mTw[1], 10);
+    const fullYear = yTw > 50 ? (yTw + 1911) : (yTw + 2000);
+    const mVal = parseInt(mTw[2], 10);
+    const dVal = parseInt(mTw[3], 10);
+    if (!validateCalendarDate(fullYear, mVal, dVal)) return null;
+    return new Date(fullYear, mVal - 1, dVal, 12, 0, 0);
+  }
+
+  // 2. 純 8 碼數字 YYYYMMDD (例如 20261120)
+  const m8 = s.match(/^(\d{4})(\d{2})(\d{2})$/);
+  if (m8) {
+    const y = parseInt(m8[1], 10);
+    const mVal = parseInt(m8[2], 10);
+    const dVal = parseInt(m8[3], 10);
+    if (!validateCalendarDate(y, mVal, dVal)) return null;
+    return new Date(y, mVal - 1, dVal, 12, 0, 0);
+  }
+
+  // 3. 常見完整西曆 YYYY[-/.]MM[-/.]DD (例如 2026-11-20, 2026/11/20, 2026.11.20)
+  const mFull = s.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/);
+  if (mFull) {
+    const y = parseInt(mFull[1], 10);
+    const mVal = parseInt(mFull[2], 10);
+    const dVal = parseInt(mFull[3], 10);
+    if (!validateCalendarDate(y, mVal, dVal)) return null;
+    return new Date(y, mVal - 1, dVal, 12, 0, 0);
+  }
+
+  // 4. 簡易月份/日期 MM/DD 或 MM-DD (例如 11/20 或 02/15)
+  const mShort = s.match(/^(\d{1,2})[-/.](\d{1,2})$/);
+  if (mShort) {
+    const mVal = parseInt(mShort[1], 10);
+    const dVal = parseInt(mShort[2], 10);
+    // 若月份比當前測量月份小，代表預產期在次年
+    const targetYear = (mVal >= curMonth) ? curYear : (curYear + 1);
+    if (!validateCalendarDate(targetYear, mVal, dVal)) return null;
+    return new Date(targetYear, mVal - 1, dVal, 12, 0, 0);
+  }
+
+  return null;
+}
+
+/**
+ * 依據預產期 (EDD) 與量測日期嚴格計算懷孕週數
+ * 公式：以預產期當日為 40週+0天 (280天)
+ * @param {string} eddStr
+ * @param {string} measureDateStr
+ * @returns {{
+ *   isValid: boolean,
+ *   isWithinRange?: boolean,
+ *   weeks?: number,
+ *   days?: number,
+ *   gaDays?: number,
+ *   error?: string,
+ *   warning?: string
+ * }}
+ */
+export function calculateGAFromEDD(eddStr, measureDateStr) {
+  const measure = parseStrictDate(measureDateStr);
+  const edd = parseStrictDate(eddStr, measure);
+  if (!edd) {
+    return { isValid: false, error: '預產期格式無效或包含不存在日期（如 2月30日）' };
+  }
+  if (!measure) {
+    return { isValid: false, error: '量測日期格式無效或包含不存在日期' };
+  }
+
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const diffDays = Math.round((edd.getTime() - measure.getTime()) / msPerDay);
+  const gaDays = 280 - diffDays;
+
+  if (gaDays < 28 || gaDays > 315) {
+    return {
+      isValid: false,
+      error: `推算妊娠天數為 ${gaDays} 天 (${Math.floor(gaDays/7)}週)，超出生理懷孕週期範圍。`
+    };
+  }
+
+  const weeks = Math.floor(gaDays / 7);
+  const days = gaDays % 7;
+  const isWithinRange = gaDays >= MIN_GA_TOTAL_DAYS && gaDays <= MAX_GA_TOTAL_DAYS;
+
+  return {
+    isValid: true,
+    isWithinRange,
+    weeks,
+    days,
+    gaDays,
+    warning: isWithinRange ? undefined : `推算週數為 ${weeks}+${days} 週，超出 FMF 驗證參考範圍 (20+0 至 41+6 週)。`
+  };
+}

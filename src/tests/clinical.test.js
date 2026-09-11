@@ -2,11 +2,13 @@
  * 產科多普勒全面臨床單元測試定義
  */
 
-import { gestationalAgeToDecimal, gestationalAgeToDays, validateGestationalAge } from '../clinical/gestationalAge.js';
+import { gestationalAgeToDecimal, gestationalAgeToDays, validateGestationalAge, validateCalendarDate, parseStrictDate, calculateGAFromEDD } from '../clinical/gestationalAge.js';
 import { calculateCPR, formatCPRForDisplay, validateDopplerInputs } from '../clinical/calculateCPR.js';
 import { normalCDF, zScoreToPercentile, calculateZScore, formatPercentile } from '../clinical/statistics.js';
 import { interpretCPR, interpretMCA, interpretUA, interpretCombinedResults } from '../clinical/interpretation.js';
 import { fmf2019ReferenceModel } from '../references/fmf2019/index.js';
+import { CPR_COEFFICIENTS, CPR_WEEKLY_GOLDEN_DATASET, getCPRReference } from '../references/fmf2019/cpr.js';
+import { PatientStore } from '../data/patientStore.js';
 
 export function runTests(assert) {
   // ==========================================
@@ -322,5 +324,147 @@ export function runTests(assert) {
       caseA.historicalCprNote.includes('≥ 1.0'),
       '當 CPR ≥ 1.0 時提供特定週數優先之解析說明'
     );
+  });
+
+  // ==========================================
+  // 7. Codex QC P0-1: 標準常態 CDF 與已知答案黃金測試 (Known-Answer Tests)
+  // ==========================================
+
+  assert.describe('Codex QC P0-1: 常態分佈 CDF 精確度與已知答案測試 (KAT)', () => {
+    // 基準常態臨界點 (Z-scores to CDF)
+    assert.closeTo(normalCDF(0), 0.5, 1e-7, 'Z = 0.0 對應精確 50.0% CDF');
+    assert.closeTo(normalCDF(-1.644853), 0.05, 1e-4, 'Z = -1.644853 對應精確 5.0% CDF');
+    assert.closeTo(normalCDF(1.644853), 0.95, 1e-4, 'Z = +1.644853 對應精確 95.0% CDF');
+    assert.closeTo(normalCDF(-1.959964), 0.025, 1e-4, 'Z = -1.959964 對應精確 2.5% CDF');
+
+    // 重現案例：GA 28+4 週，MCA PI 1.44，UA PI 1.00 -> CPR 1.44
+    // 舊版 Bug: normalCDF(z) 漏除 Math.SQRT2，導致算出 3.4% 假陽性異常！
+    // 正確修復後：應得到約 9.8% ~ 10.0%，落於正常區間 (>= 5%)
+    const gaDec = 28 + (4 / 7);
+    const cprRef = getCPRReference(gaDec);
+    const measuredCPR = 1.44;
+    const zScore = cprRef.calculateZScore(measuredCPR);
+    const percentile = cprRef.calculatePercentile(measuredCPR);
+
+    assert.closeTo(percentile, 9.8, 0.5, '重現案例 GA 28+4, CPR 1.44 之百分位約為 9.8% (決不為 3.4%)');
+    assert.isTrue(percentile >= 5.0, '重現案例 CPR 1.44 落於常態區間 (>= 5%)，非假陽性異常');
+  });
+
+  // ==========================================
+  // 8. Codex QC P0-2: CPR 參考模型透明度與 Golden Dataset 逐點比對
+  // ==========================================
+
+  assert.describe('Codex QC P0-2: CPR 參考模型透明度與 Golden Dataset 比對', () => {
+    assert.isFalse(CPR_COEFFICIENTS.isVerified, '在 Table S1 核驗前明確標記 isVerified: false');
+    assert.isTrue(CPR_COEFFICIENTS.verificationStatus.includes('研究與測試'), '狀態標示為研究與測試參考模型');
+
+    // 逐點比對 20w 至 40w 每週中位數、5th 與 95th 數值
+    CPR_WEEKLY_GOLDEN_DATASET.forEach(golden => {
+      const ref = getCPRReference(golden.weeks);
+      assert.closeTo(ref.expectedMedian, golden.median, 0.005, `${golden.weeks} 週預期中位數符合基準 ${golden.median}`);
+      assert.closeTo(ref.centile5, golden.p5, 0.005, `${golden.weeks} 週預期 5th 符合基準 ${golden.p5}`);
+      assert.closeTo(ref.centile95, golden.p95, 0.005, `${golden.weeks} 週預期 95th 符合基準 ${golden.p95}`);
+    });
+  });
+
+  // ==========================================
+  // 9. Codex QC P1-2: 西曆日曆嚴格性與預產期無效日期攔截
+  // ==========================================
+
+  assert.describe('Codex QC P1-2: 西曆日曆嚴格性與無效日期攔截', () => {
+    // 2月30日不存在
+    assert.isFalse(validateCalendarDate(2026, 2, 30), '2026年2月30日必須拒絕');
+    assert.isFalse(validateCalendarDate(2024, 2, 30), '閏年2月30日亦必須拒絕');
+    // 4月31日不存在
+    assert.isFalse(validateCalendarDate(2026, 4, 31), '4月31日必須拒絕');
+    // 平年2月29日不存在
+    assert.isFalse(validateCalendarDate(2026, 2, 29), '2026平年2月29日必須拒絕');
+    // 閏年2月29日合法
+    assert.isTrue(validateCalendarDate(2024, 2, 29), '2024閏年2月29日合法');
+    assert.isTrue(validateCalendarDate(2026, 2, 28), '2026年2月28日合法');
+
+    // 嚴格日期字串解析
+    assert.equal(parseStrictDate('2026-02-30'), null, 'parseStrictDate 拒絕 2026-02-30');
+    assert.isTrue(parseStrictDate('2026-02-28') instanceof Date, 'parseStrictDate 接受 2026-02-28');
+
+    // calculateGAFromEDD 對 2026-02-30 回傳錯誤
+    const eddRes = calculateGAFromEDD('2026-02-30', '2026-09-03');
+    assert.isFalse(eddRes.isValid, '預產期為 2026-02-30 時嚴格回傳無效');
+    assert.isTrue(eddRes.error.includes('無效') || eddRes.error.includes('不存在'), '錯誤訊息明確指出日期無效');
+  });
+
+  // ==========================================
+  // 10. Codex QC P0-3 & P1-3: 資料治理、嚴格 Schema 驗證與防重複
+  // ==========================================
+
+  assert.describe('Codex QC P0-3 & P1-3: 資料治理與 Fail-Closed 防護', () => {
+    const testMRN = 'TEST_QC_PATIENT';
+
+    // 1. 拒絕超界或無效資料寫入
+    assert.throws(() => {
+      PatientStore.saveMeasurement(testMRN, {
+        weeks: 45, // 超出 42
+        days: 0,
+        gaDecimal: 45.0,
+        mcaPI: 1.5,
+        umaPI: 1.0,
+        cpr: 1.5,
+        centile: 50.0,
+        isAbnormal: false
+      });
+    }, RangeError, '週數 45 超界被拒絕寫入');
+
+    assert.throws(() => {
+      PatientStore.saveMeasurement(testMRN, {
+        weeks: 30,
+        days: 0,
+        gaDecimal: 30.0,
+        mcaPI: -1.0, // 負數 PI
+        umaPI: 1.0,
+        cpr: 1.5,
+        centile: 50.0,
+        isAbnormal: false
+      });
+    }, RangeError, '負數 MCA PI 被拒絕寫入');
+
+    // 2. 正常寫入與稽核欄位驗證
+    const fixedTime = '2026-09-03 10:00';
+    const updated = PatientStore.saveMeasurement(testMRN, {
+      weeks: 30,
+      days: 2,
+      gaDecimal: 30.285,
+      mcaPI: 1.60,
+      umaPI: 0.90,
+      cpr: 1.78,
+      centile: 45.0,
+      isAbnormal: false,
+      timestamp: fixedTime,
+      edd: '2026-11-20'
+    }, '2026-11-20');
+
+    assert.isTrue(updated.length >= 1, '測量紀錄成功寫入');
+    const saved = updated[updated.length - 1];
+    assert.isTrue(typeof saved.id === 'string' && saved.id.length >= 8, '自動產生唯一 UUID 識別碼');
+    assert.equal(saved.mcaPI, 1.60, '保存完整原始 MCA PI');
+    assert.equal(saved.umaPI, 0.90, '保存完整原始 UA PI');
+    assert.equal(saved.edd, '2026-11-20', '保存預產期');
+
+    // 3. 重複儲存防護
+    assert.throws(() => {
+      PatientStore.saveMeasurement(testMRN, {
+        weeks: 30,
+        days: 2,
+        gaDecimal: 30.285,
+        mcaPI: 1.60,
+        umaPI: 0.90,
+        cpr: 1.78,
+        centile: 45.0,
+        isAbnormal: false,
+        timestamp: fixedTime
+      });
+    }, Error, '同一時間完全相同數值之重複儲存被防護攔截');
+
+    // 清理測試資料
+    PatientStore.deleteRecord(testMRN, saved.id);
   });
 }

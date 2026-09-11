@@ -27,6 +27,7 @@ cp AppIcon.icns "${RESOURCES_DIR}/AppIcon.icns"
 # 5. 複製網頁介面資源至 Resources 目錄
 cp index.html "${RESOURCES_DIR}/"
 cp styles.css "${RESOURCES_DIR}/"
+cp app.bundle.js "${RESOURCES_DIR}/"
 cp test.html "${RESOURCES_DIR}/"
 cp -R src "${RESOURCES_DIR}/"
 
