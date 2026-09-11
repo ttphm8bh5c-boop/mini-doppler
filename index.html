@@ -9,35 +9,34 @@
 <body class="ios-app-body">
 
   <div class="app-container">
-    <!-- 頂部吸頂區 (Sticky Top: 鍵盤彈起時依然常駐頂部即時顯示) -->
-    <header class="sticky-header">
-      <div class="ios-nav-header">
-        <h1 class="nav-title">胎兒 CPR 計算器</h1>
-      </div>
+    
+    <!-- 1. 核心結果卡片 (整合標題 ＋ CPR 數值 ＆ 百分位數，極致緊湊) -->
+    <header class="result-card">
+      <div class="card-top-title">胎兒 CPR 計算器 · FMF 2019</div>
 
-      <!-- 1. 核心結果雙輸出卡片 (CPR 數值 ＆ 百分位數 %) -->
-      <section class="result-card">
+      <div class="result-data-row">
+        <!-- CPR 數值 -->
         <div class="result-col">
-          <span class="result-label">CPR 數值</span>
-          <div class="result-value" id="res-cpr-val">2.03</div>
-          <span class="result-formula">MCA PI / UmA PI</span>
+          <span class="result-label">CPR 數值 (MCA / UmA)</span>
+          <div class="result-value" id="res-cpr-val">1.46</div>
         </div>
 
         <div class="result-divider"></div>
 
+        <!-- 百分位數 -->
         <div class="result-col">
           <span class="result-label">百分位數 (參考值)</span>
-          <div class="result-value" id="res-centile-val">72.8%</div>
+          <div class="result-value" id="res-centile-val">22.6%</div>
           <span id="res-status-badge" class="status-badge badge-normal">✓ 常態區間 (≥ 5th)</span>
         </div>
-      </section>
+      </div>
     </header>
 
-    <!-- 2. 懷孕週數轉輪選擇器 (iOS Picker Wheel) -->
+    <!-- 2. 懷孕週數轉輪 (緊湊型 iOS Wheel Picker，零遮擋) -->
     <section class="ios-card wheel-card">
       <div class="card-header">
-        <span class="card-title">懷孕週數 (Gestational Age)</span>
-        <span class="card-highlight" id="ga-selected-display">28 週 4 天</span>
+        <span class="card-title">懷孕週數</span>
+        <span class="card-highlight" id="ga-selected-display">22 週 2 天 (22.3w)</span>
       </div>
 
       <div class="ios-picker-wrapper">
@@ -64,15 +63,12 @@
       </div>
     </section>
 
-    <!-- 3. MCA PI 與 UmA PI 數字鍵盤輸入群組 -->
+    <!-- 3. MCA PI 與 UmA PI 數字輸入群組 (單行緊湊化) -->
     <section class="ios-card inputs-card">
       <div class="doppler-input-row">
-        <div class="doppler-label-wrap">
-          <label class="doppler-title" for="input-mca">大腦中動脈 MCA PI</label>
-          <span class="doppler-subtitle">Middle Cerebral Artery</span>
-        </div>
+        <label class="doppler-title" for="input-mca">MCA PI (大腦中動脈)</label>
         <div class="input-field-box">
-          <input type="text" inputmode="decimal" id="input-mca" class="ios-number-input" value="1.79" placeholder="1.79" autocomplete="off" />
+          <input type="text" inputmode="decimal" id="input-mca" class="ios-number-input" value="1.75" placeholder="1.75" autocomplete="off" />
           <button type="button" class="btn-clear-input" id="btn-clear-mca" aria-label="清空 MCA PI">✕</button>
         </div>
       </div>
@@ -80,21 +76,19 @@
       <div class="row-separator"></div>
 
       <div class="doppler-input-row">
-        <div class="doppler-label-wrap">
-          <label class="doppler-title" for="input-uma">臍動脈 UmA PI</label>
-          <span class="doppler-subtitle">Umbilical Artery</span>
-        </div>
+        <label class="doppler-title" for="input-uma">UmA PI (臍動脈)</label>
         <div class="input-field-box">
-          <input type="text" inputmode="decimal" id="input-uma" class="ios-number-input" value="0.88" placeholder="0.88" autocomplete="off" />
+          <input type="text" inputmode="decimal" id="input-uma" class="ios-number-input" value="1.20" placeholder="1.20" autocomplete="off" />
           <button type="button" class="btn-clear-input" id="btn-clear-uma" aria-label="清空 UmA PI">✕</button>
         </div>
       </div>
     </section>
 
-    <!-- 臨床指引免責與文獻依據 -->
+    <!-- 頁尾文獻提示 -->
     <footer class="app-footer">
-      <p class="citation-text">文獻：FMF 2019 (Ciobanu et al.) ｜ ISUOG 2020 建議多模態綜合評估</p>
+      <p class="citation-text">文獻：FMF 2019 (Ciobanu et al.) · ISUOG 2020 建議多模態評估</p>
     </footer>
+
   </div>
 
   <script src="app.bundle.js"></script>
