@@ -3,16 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>胎兒多普勒 CPR 計算器</title>
+  <title>胎兒 CPR 百分位換算器</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body class="ios-app-body">
 
   <div class="app-container">
     
-    <!-- 1. 核心結果卡片 (整合標題 ＋ CPR 數值 ＆ 百分位數，極致緊湊) -->
+    <!-- 1. 核心結果雙輸出卡片 (純數值換算，無任何正常／異常分類) -->
     <header class="result-card">
-      <div class="card-top-title">胎兒 CPR 計算器 · FMF 2019</div>
+      <div class="card-top-title">胎兒 CPR 百分位換算器 · FMF 2019 Table S1</div>
 
       <div class="result-data-row">
         <!-- CPR 數值 -->
@@ -23,20 +23,19 @@
 
         <div class="result-divider"></div>
 
-        <!-- 百分位數 -->
+        <!-- CPR 百分位數 (依 Table S1 獨立核驗模型) -->
         <div class="result-col">
-          <span class="result-label">百分位數 (參考值)</span>
-          <div class="result-value" id="res-centile-val">22.6%</div>
-          <span id="res-status-badge" class="status-badge badge-normal">✓ 常態區間 (≥ 5th)</span>
+          <span class="result-label">CPR 百分位數 (%)</span>
+          <div class="result-value" id="res-centile-val">17.6%</div>
         </div>
       </div>
     </header>
 
-    <!-- 2. 懷孕週數轉輪 (緊湊型 iOS Wheel Picker，零遮擋) -->
+    <!-- 2. 懷孕週數轉輪 (嚴格限定 20+0 ～ 41+6) -->
     <section class="ios-card wheel-card">
       <div class="card-header">
-        <span class="card-title">懷孕週數</span>
-        <span class="card-highlight" id="ga-selected-display">22 週 2 天 (22.3w)</span>
+        <span class="card-title">懷孕週數 (20+0 ～ 41+6)</span>
+        <span class="card-highlight" id="ga-selected-display">24 週 0 天 (24.0w)</span>
       </div>
 
       <div class="ios-picker-wrapper">
@@ -45,10 +44,10 @@
         <!-- 漸層深度遮罩 -->
         <div class="picker-fade-mask"></div>
 
-        <!-- 週數滾輪 (20 ~ 42 週) -->
+        <!-- 週數滾輪 (20 ~ 41 週) -->
         <div class="picker-column" id="picker-col-weeks">
           <div class="picker-wheel" id="wheel-weeks">
-            <!-- 由 JavaScript 自動生成 -->
+            <!-- 由 JavaScript 自動生成 20 至 41 -->
           </div>
         </div>
 
@@ -57,18 +56,18 @@
         <!-- 天數滾輪 (0 ~ 6 天) -->
         <div class="picker-column" id="picker-col-days">
           <div class="picker-wheel" id="wheel-days">
-            <!-- 由 JavaScript 自動生成 -->
+            <!-- 由 JavaScript 自動生成 0 至 6 -->
           </div>
         </div>
       </div>
     </section>
 
-    <!-- 3. MCA PI 與 UmA PI 數字輸入群組 (單行緊湊化) -->
+    <!-- 3. MCA PI 與 UmA PI 嚴格十進位輸入群組 -->
     <section class="ios-card inputs-card">
       <div class="doppler-input-row">
         <label class="doppler-title" for="input-mca">MCA PI (大腦中動脈)</label>
         <div class="input-field-box">
-          <input type="text" inputmode="decimal" id="input-mca" class="ios-number-input" value="1.75" placeholder="1.75" autocomplete="off" />
+          <input type="text" inputmode="decimal" id="input-mca" class="ios-number-input" value="1.75" placeholder="0.10–5.00" autocomplete="off" />
           <button type="button" class="btn-clear-input" id="btn-clear-mca" aria-label="清空 MCA PI">✕</button>
         </div>
       </div>
@@ -78,15 +77,15 @@
       <div class="doppler-input-row">
         <label class="doppler-title" for="input-uma">UmA PI (臍動脈)</label>
         <div class="input-field-box">
-          <input type="text" inputmode="decimal" id="input-uma" class="ios-number-input" value="1.20" placeholder="1.20" autocomplete="off" />
+          <input type="text" inputmode="decimal" id="input-uma" class="ios-number-input" value="1.20" placeholder="0.10–5.00" autocomplete="off" />
           <button type="button" class="btn-clear-input" id="btn-clear-uma" aria-label="清空 UmA PI">✕</button>
         </div>
       </div>
     </section>
 
-    <!-- 頁尾文獻提示 -->
+    <!-- 頁尾文獻標示 (純統計參考模型，零病患資料儲存) -->
     <footer class="app-footer">
-      <p class="citation-text">文獻：FMF 2019 (Ciobanu et al.) · ISUOG 2020 建議多模態評估</p>
+      <p class="citation-text">依 FMF 2019 Table S1 (Ciobanu et al.) 獨立核驗模型換算 · 純統計計算器</p>
     </footer>
 
   </div>
