@@ -116,5 +116,5 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcrun simctl launch boo
   1. Re-sign and re-install with `-allowProvisioningUpdates` and team `33KMXYMW7J`.
   2. If iOS prompt persists, on iPhone go to: **Settings > General > VPN & Device Management** and trust the developer profile.
   3. Ensure Developer Mode remains toggled ON in **Settings > Privacy & Security > Developer Mode**.
-- **Error: `Missing project.pbxproj`**:
-  Keep a dual-sync copy in repository `ios/<Project>.xcodeproj` and Desktop `/Users/eddylo/Desktop/<Project>.xcodeproj` for easy Xcode GUI access.
+- **Project Workspace Integrity**:
+  Maintain all project assets and `.xcodeproj` bundles directly within the repository structure (`ios/<Project>.xcodeproj`). Avoid leaving extraneous project copies on the Desktop.

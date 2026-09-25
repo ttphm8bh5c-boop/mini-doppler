@@ -15,5 +15,5 @@ All iOS build, signing, and installation operations in this project must strictl
    - `icon_1024.png`: Strictly 1024×1024, full-bleed square canvas (no fake squircle borders, no text).
 4. **Device Management**:
    - Use `xcrun devicectl device install app` and `xcrun devicectl device process launch`.
-5. **Project Sync**:
-   - Synchronize changes between repository `ios/MiniDoppler.xcodeproj` and `/Users/eddylo/Desktop/MiniDoppler.xcodeproj`.
+5. **Project Organization**:
+   - The canonical project files are strictly consolidated within `ios/MiniDoppler.xcodeproj`. No project files or duplicate directories are kept on the Desktop.
